@@ -2,6 +2,10 @@
 
 Aplicación Flutter para reconocimiento de texto japonés (OCR) usando Google ML Kit.
 
+## ¿Por qué hice este repo?
+
+Todo lo que encontré en internet usa recursos gratuitos para cobrarte por copiar el texto de una imagen, ante esto, e invocando a a Bender, se me ocurrió hacer mi propia app de OCR con juego de azar y mujerzuelas. Todo puede cambiar y el código es basura.
+
 ## Características
 
 ### ✨ Funcionalidades Principales
