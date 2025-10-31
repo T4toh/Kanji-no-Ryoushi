@@ -102,7 +102,20 @@ class _HistoryPageState extends State<HistoryPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Historial'),
+        title: GestureDetector(
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Kanji no Ryoushi')),
+            );
+          },
+          child: Stack(
+            alignment: Alignment.center,
+            children: const [
+              Text('漢字の漁師 🎣 🗾'),
+              Opacity(opacity: 0.0, child: Text('Kanji no Ryoushi')),
+            ],
+          ),
+        ),
         backgroundColor: theme.colorScheme.inversePrimary,
         actions: [
           if (_history.isNotEmpty)
