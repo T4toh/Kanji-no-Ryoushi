@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:path_provider/path_provider.dart';
+import 'package:kanji_no_ryoushi/widgets/image_cropper_widget.dart';
 import '../services/ocr_service.dart';
 import '../services/history_service.dart';
 import '../models/ocr_history_entry.dart';
@@ -35,6 +38,32 @@ class _OCRPageState extends State<OCRPage> {
   void dispose() {
     _ocrService.dispose();
     super.dispose();
+  }
+
+  /// Abre el cropper en un modal con el archivo [file]. Al confirmar, reemplaza
+  /// la imagen seleccionada por el recorte y relanza el procesamiento OCR.
+  Future<void> _openCropperWithFile(File file) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.85,
+        child: ImageCropperWidget(
+          imageFile: file,
+          onCropped: (cropped) async {
+            // Cerrar el modal y reemplazar la imagen seleccionada
+            Navigator.pop(context);
+            setState(() {
+              _selectedImage = cropped;
+              _isUsingExampleImage = false;
+            });
+            // Reprocesar la imagen recortada
+            await _processSelectedImage();
+          },
+          onCancel: () => Navigator.pop(context),
+        ),
+      ),
+    );
   }
 
   /// Selecciona una imagen desde la galería
@@ -290,24 +319,48 @@ class _OCRPageState extends State<OCRPage> {
                 ),
               )
             else
-              // Mostrar imagen seleccionada o de ejemplo
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                    width: 1,
+              // Mostrar imagen seleccionada o de ejemplo (tap para recortar)
+              GestureDetector(
+                onTap: _isProcessing
+                    ? null
+                    : () async {
+                        try {
+                          if (_isUsingExampleImage) {
+                            // Escribir asset a temporal y abrir cropper
+                            final bytes = await rootBundle.load(
+                              'assets/images/prueba_texto.png',
+                            );
+                            final tempDir = await getTemporaryDirectory();
+                            final tmp = File(
+                              '${tempDir.path}/example_${DateTime.now().millisecondsSinceEpoch}.png',
+                            );
+                            await tmp.writeAsBytes(bytes.buffer.asUint8List());
+                            await _openCropperWithFile(tmp);
+                          } else if (_selectedImage != null) {
+                            await _openCropperWithFile(_selectedImage!);
+                          }
+                        } catch (e) {
+                          debugPrint('Error al abrir cropper: $e');
+                        }
+                      },
+                child: Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
                   ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: _isUsingExampleImage
-                      ? Image.asset(
-                          'assets/images/prueba_texto.png',
-                          fit: BoxFit.contain,
-                        )
-                      : Image.file(_selectedImage!, fit: BoxFit.contain),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: _isUsingExampleImage
+                        ? Image.asset(
+                            'assets/images/prueba_texto.png',
+                            fit: BoxFit.contain,
+                          )
+                        : Image.file(_selectedImage!, fit: BoxFit.contain),
+                  ),
                 ),
               ),
 

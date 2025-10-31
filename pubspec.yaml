@@ -23,6 +23,8 @@ dependencies:
 
   path_provider: ^2.1.5
   shared_preferences: ^2.3.3
+  # Image manipulation (crop/encode) in pure Dart
+  image: ^4.0.17
 
 dev_dependencies:
   flutter_test:
