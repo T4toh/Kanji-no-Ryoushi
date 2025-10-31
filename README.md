@@ -33,8 +33,11 @@ lib/
 │   ├── ocr_page.dart          # Pantalla principal con UI
 │   └── history_page.dart      # Pantalla de historial
 └── services/
-    ├── ocr_service.dart       # Lógica de OCR con ML Kit
-    └── history_service.dart   # Gestión del historial persistente
+   ├── ocr_service.dart       # Lógica de OCR con ML Kit
+   ├── history_service.dart   # Gestión del historial persistente
+   └── image_service.dart     # Utilidades de recorte / manipulación de imagen
+└── widgets/
+   └── image_cropper_widget.dart # Editor de recorte modular (zoom, pan, seleccionar, mover)
 ```
 
 **Modular y escalable**: Separación clara entre UI, lógica de negocio y modelos.
@@ -75,6 +78,30 @@ flutter run
    - 📖 **Ver bloques**: Los textos se separan automáticamente en bloques
    - 📋 **Copiar bloques**: Copia bloques individuales o el texto completo
    - 🗑️ **Eliminar**: Elimina entradas individuales o todo el historial
+
+## ✂️ Editor de recorte (nuevo)
+
+Uso rápido:
+
+- Toca la imagen (ejemplo o seleccionada) en la pantalla principal para abrir el editor de recorte.
+- Arrastra sobre la imagen para crear un rectángulo de selección.
+- Si arrastras dentro del rectángulo, mueves la selección (útil para ajustar sin cambiar el tamaño).
+- Pellizca para hacer zoom y arrastra para mover la vista (el editor usa `InteractiveViewer` para precisión).
+- Pulsa "Recortar" para confirmar: el recorte se guarda como imagen temporal, reemplaza la imagen actualmente seleccionada y se vuelve a ejecutar el OCR automáticamente (y se guarda en el historial).
+
+Archivos y arquitectura:
+
+- `lib/services/image_service.dart`: función `cropImage(File, CropRect)` que decodifica la imagen, aplica el recorte y escribe un JPEG temporal.
+- `lib/widgets/image_cropper_widget.dart`: widget modular que muestra la imagen, permite seleccionar y mover la selección, y devuelve el `File` recortado mediante el callback `onCropped`.
+
+Dependencia nueva:
+
+- `image` — usada por `ImageService` para decodificar/recortar/encodear en Dart. Añadida en `pubspec.yaml`.
+
+Notas de usabilidad:
+
+- Para recortes muy grandes o imágenes pesadas, el proceso de recorte se realiza en Dart y puede tardar; para rendimiento extremo se puede integrar un recortador nativo más adelante.
+- Podemos añadir handles de redimensionado en el editor (esquinas) y guardar miniaturas en el historial como mejoras futuras.
 
 ## 📱 Permisos
 
