@@ -180,10 +180,13 @@ class _OCRPageState extends State<OCRPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Kanji no Ryoushi'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: theme.colorScheme.inversePrimary,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -196,9 +199,14 @@ class _OCRPageState extends State<OCRPage> {
               Container(
                 height: 200,
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[400]!),
+                  color: isDarkMode
+                      ? theme.colorScheme.surfaceContainerHighest
+                      : theme.colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.5),
+                    width: 2,
+                  ),
                 ),
                 child: Center(
                   child: Column(
@@ -207,12 +215,15 @@ class _OCRPageState extends State<OCRPage> {
                       Icon(
                         Icons.add_photo_alternate,
                         size: 64,
-                        color: Colors.grey[600],
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Selecciona una imagen',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 16,
+                        ),
                       ),
                     ],
                   ),
@@ -220,19 +231,24 @@ class _OCRPageState extends State<OCRPage> {
               )
             else
               // Mostrar imagen seleccionada o de ejemplo
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: _isUsingExampleImage
-                    ? Image.asset(
-                        'assets/images/prueba_texto.png',
-                        fit: BoxFit.contain,
-                        height: 200,
-                      )
-                    : Image.file(
-                        _selectedImage!,
-                        fit: BoxFit.contain,
-                        height: 200,
-                      ),
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: _isUsingExampleImage
+                      ? Image.asset(
+                          'assets/images/prueba_texto.png',
+                          fit: BoxFit.contain,
+                        )
+                      : Image.file(_selectedImage!, fit: BoxFit.contain),
+                ),
               ),
 
             const SizedBox(height: 16),
@@ -245,9 +261,6 @@ class _OCRPageState extends State<OCRPage> {
                 _selectedImage == null && !_isUsingExampleImage
                     ? 'Seleccionar Imagen'
                     : 'Cambiar Imagen',
-              ),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
 
@@ -270,17 +283,23 @@ class _OCRPageState extends State<OCRPage> {
                   ? Center(
                       child: Text(
                         'El texto reconocido aparecerá aquí',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 16,
+                        ),
                       ),
                     )
                   : Card(
-                      elevation: 2,
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: SingleChildScrollView(
                           child: SelectableText(
                             _recognizedText,
-                            style: const TextStyle(fontSize: 18, height: 1.5),
+                            style: TextStyle(
+                              fontSize: 18,
+                              height: 1.5,
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                         ),
                       ),

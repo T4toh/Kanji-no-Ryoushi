@@ -12,6 +12,8 @@ Aplicación Flutter para reconocimiento de texto japonés (OCR) usando Google ML
 - 📋 **Texto seleccionable**: Copia fácilmente el texto reconocido
 - 🔄 **Reprocesamiento**: Vuelve a procesar la misma imagen si es necesario
 - 🎨 **Imagen de ejemplo**: Prueba la app con una imagen de ejemplo incluida
+- 🌓 **Tema adaptativo**: Soporte completo para modo claro y oscuro
+- 🎯 **Ícono personalizado**: Ícono único de la app
 
 ### 🏗️ Arquitectura
 
@@ -76,6 +78,20 @@ flutter run
 - `google_mlkit_text_recognition`: OCR con ML Kit
 - `image_picker`: Selección de imágenes
 - `path_provider`: Gestión de archivos temporales
+- `flutter_launcher_icons`: Generación de íconos para la app
+
+## 🎨 Personalización
+
+### Tema
+
+La app soporta automáticamente modo claro y oscuro siguiendo la configuración del sistema. Los colores se basan en Material 3 con un color principal púrpura.
+
+### Ícono
+
+Para cambiar el ícono de la app:
+
+1. Reemplaza `assets/images/icon.jpg` con tu imagen
+2. Ejecuta: `dart run flutter_launcher_icons`
 
 ## 📝 Desarrollo
 
