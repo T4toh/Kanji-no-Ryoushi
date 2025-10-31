@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 // MatrixUtils is available via material.dart; remove explicit rendering import
 import '../services/image_service.dart';
 
+enum _DragMode { none, move, resizeTL, resizeTR, resizeBL, resizeBR }
+
 /// Widget modular para recortar una región de una imagen.
 /// Devuelve el archivo recortado mediante [onCropped].
 class ImageCropperWidget extends StatefulWidget {
@@ -35,11 +37,15 @@ class _ImageCropperWidgetState extends State<ImageCropperWidget> {
   Rect? _selection;
   // Start point for new selection in image-widget coords
   Offset? _startPointImage;
-  // For moving selection
-  bool _isMoving = false;
+  // For moving / resizing selection
   Offset? _lastImagePoint;
 
   bool _isProcessing = false;
+
+  // Current drag mode (move / resize corner)
+  _DragMode _dragMode = _DragMode.none;
+
+  // (previously used for global->local conversion; no longer needed)
 
   @override
   void initState() {
@@ -56,52 +62,70 @@ class _ImageCropperWidgetState extends State<ImageCropperWidget> {
     });
   }
 
-  void _onPanStart(
-    DragStartDetails details,
-    Size imageDisplaySize,
-    Offset imageOffset,
-  ) {
+  void _onPanStart(DragStartDetails details, Size imageDisplaySize) {
+    // details.localPosition is relative to the GestureDetector which we'll place exactly
+    // over the image area, so use it directly.
     final local = details.localPosition;
-    if (!_pointInsideImage(local, imageOffset, imageDisplaySize)) return;
+    if (!_pointInsideImage(local, imageDisplaySize)) return;
 
     // Map local point to image-widget coords by applying inverse transform
-    final imageLocal = local - imageOffset;
     final Matrix4 m = _transformationController.value.clone();
     m.invert();
-    final Offset imgPoint = MatrixUtils.transformPoint(m, imageLocal);
+    final Offset imgPoint = MatrixUtils.transformPoint(m, local);
 
-    // If inside existing selection, start moving
-    if (_selection != null && _selection!.contains(imgPoint)) {
-      _isMoving = true;
+    // Determine if touching a resize handle (corners)
+    final handle = _hitTestHandle(imgPoint);
+    if (handle != _DragMode.none) {
+      _dragMode = handle;
+      _lastImagePoint = imgPoint;
+    } else if (_selection != null && _selection!.contains(imgPoint)) {
+      // start moving
+      _dragMode = _DragMode.move;
       _lastImagePoint = imgPoint;
     } else {
-      // Start new selection
-      _isMoving = false;
+      // start new selection
+      _dragMode = _DragMode.none;
       _startPointImage = imgPoint;
       _selection = Rect.fromLTWH(imgPoint.dx, imgPoint.dy, 0, 0);
     }
     setState(() {});
   }
 
-  void _onPanUpdate(
-    DragUpdateDetails details,
-    Size imageDisplaySize,
-    Offset imageOffset,
-  ) {
+  void _onPanUpdate(DragUpdateDetails details, Size imageDisplaySize) {
     final local = details.localPosition;
-    if (!_pointInsideImage(local, imageOffset, imageDisplaySize)) return;
+    if (!_pointInsideImage(local, imageDisplaySize)) return;
 
-    final imageLocal = local - imageOffset;
     final Matrix4 m = _transformationController.value.clone();
     m.invert();
-    final Offset imgPoint = MatrixUtils.transformPoint(m, imageLocal);
+    final Offset imgPoint = MatrixUtils.transformPoint(m, local);
 
-    if (_isMoving && _selection != null && _lastImagePoint != null) {
+    if ((_dragMode == _DragMode.move) &&
+        _selection != null &&
+        _lastImagePoint != null) {
       final delta = imgPoint - _lastImagePoint!;
       final newRect = _selection!.shift(delta);
-      // clamp within image display bounds
       _selection = _clampRectToImage(newRect, imageDisplaySize);
       _lastImagePoint = imgPoint;
+    } else if (_dragMode == _DragMode.resizeTL && _selection != null) {
+      final r = _selection!;
+      final left = imgPoint.dx.clamp(0.0, r.right - 1);
+      final top = imgPoint.dy.clamp(0.0, r.bottom - 1);
+      _selection = Rect.fromLTRB(left, top, r.right, r.bottom);
+    } else if (_dragMode == _DragMode.resizeTR && _selection != null) {
+      final r = _selection!;
+      final right = imgPoint.dx.clamp(r.left + 1, imageDisplaySize.width);
+      final top = imgPoint.dy.clamp(0.0, r.bottom - 1);
+      _selection = Rect.fromLTRB(r.left, top, right, r.bottom);
+    } else if (_dragMode == _DragMode.resizeBL && _selection != null) {
+      final r = _selection!;
+      final left = imgPoint.dx.clamp(0.0, r.right - 1);
+      final bottom = imgPoint.dy.clamp(r.top + 1, imageDisplaySize.height);
+      _selection = Rect.fromLTRB(left, r.top, r.right, bottom);
+    } else if (_dragMode == _DragMode.resizeBR && _selection != null) {
+      final r = _selection!;
+      final right = imgPoint.dx.clamp(r.left + 1, imageDisplaySize.width);
+      final bottom = imgPoint.dy.clamp(r.top + 1, imageDisplaySize.height);
+      _selection = Rect.fromLTRB(r.left, r.top, right, bottom);
     } else if (_startPointImage != null) {
       final left = math.min(_startPointImage!.dx, imgPoint.dx);
       final top = math.min(_startPointImage!.dy, imgPoint.dy);
@@ -113,16 +137,32 @@ class _ImageCropperWidgetState extends State<ImageCropperWidget> {
   }
 
   void _onPanEnd(DragEndDetails details) {
-    _isMoving = false;
+    _dragMode = _DragMode.none;
     _lastImagePoint = null;
     _startPointImage = null;
   }
 
-  bool _pointInsideImage(Offset p, Offset imageOffset, Size imageSize) {
-    return p.dx >= imageOffset.dx &&
-        p.dx <= imageOffset.dx + imageSize.width &&
-        p.dy >= imageOffset.dy &&
-        p.dy <= imageOffset.dy + imageSize.height;
+  bool _pointInsideImage(Offset p, Size imageSize) {
+    return p.dx >= 0 &&
+        p.dx <= imageSize.width &&
+        p.dy >= 0 &&
+        p.dy <= imageSize.height;
+  }
+
+  // Hit test for resize handles (corners)
+  _DragMode _hitTestHandle(Offset p) {
+    if (_selection == null) return _DragMode.none;
+    const handleRadius = 14.0;
+    final r = _selection!;
+    final tl = (p - r.topLeft).distance <= handleRadius;
+    final tr = (p - r.topRight).distance <= handleRadius;
+    final bl = (p - r.bottomLeft).distance <= handleRadius;
+    final br = (p - r.bottomRight).distance <= handleRadius;
+    if (tl) return _DragMode.resizeTL;
+    if (tr) return _DragMode.resizeTR;
+    if (bl) return _DragMode.resizeBL;
+    if (br) return _DragMode.resizeBR;
+    return _DragMode.none;
   }
 
   Rect _clampRectToImage(Rect rect, Size imageSize) {
@@ -149,15 +189,12 @@ class _ImageCropperWidgetState extends State<ImageCropperWidget> {
     final imgH = _intrinsicImage!.height.toDouble();
 
     final scale = math.min(widgetW / imgW, widgetH / imgH);
-    final displayW = imgW * scale;
-    final displayH = imgH * scale;
-    final offsetX = (widgetW - displayW) / 2;
-    final offsetY = (widgetH - displayH) / 2;
+    // display is centered within constraints; selection coordinates are relative to image widget
 
-    // Map selection from widget coords to image pixel coords
+    // Map selection from image-widget local coords to image pixel coords
     final sel = _selection!;
-    final left = ((sel.left - offsetX) / scale).clamp(0, imgW).toDouble();
-    final top = ((sel.top - offsetY) / scale).clamp(0, imgH).toDouble();
+    final left = (sel.left / scale).clamp(0, imgW).toDouble();
+    final top = (sel.top / scale).clamp(0, imgH).toDouble();
     final width = (sel.width / scale).clamp(1, imgW - left).toDouble();
     final height = (sel.height / scale).clamp(1, imgH - top).toDouble();
 
@@ -214,24 +251,31 @@ class _ImageCropperWidgetState extends State<ImageCropperWidget> {
               top: imageOffset.dy,
               width: imageDisplaySize.width,
               height: imageDisplaySize.height,
-              child: InteractiveViewer(
-                transformationController: _transformationController,
-                clipBehavior: Clip.none,
-                panEnabled: true,
-                scaleEnabled: true,
-                minScale: 1.0,
-                maxScale: 5.0,
-                child: Image.file(widget.imageFile, fit: BoxFit.fill),
+              child: Container(
+                // Provide a decoration when using clipBehavior != Clip.none to satisfy Container assertion
+                decoration: const BoxDecoration(),
+                clipBehavior: Clip.hardEdge,
+                child: InteractiveViewer(
+                  transformationController: _transformationController,
+                  clipBehavior: Clip.none,
+                  panEnabled: true,
+                  scaleEnabled: true,
+                  minScale: 1.0,
+                  maxScale: 5.0,
+                  child: Image.file(widget.imageFile, fit: BoxFit.fill),
+                ),
               ),
             ),
 
-            // Gesture detector for selection (captures gestures over the whole area)
-            Positioned.fill(
+            // Gesture detector positioned exactly over the image so local coords match painter
+            Positioned(
+              left: imageOffset.dx,
+              top: imageOffset.dy,
+              width: imageDisplaySize.width,
+              height: imageDisplaySize.height,
               child: GestureDetector(
-                onPanStart: (d) =>
-                    _onPanStart(d, imageDisplaySize, imageOffset),
-                onPanUpdate: (d) =>
-                    _onPanUpdate(d, imageDisplaySize, imageOffset),
+                onPanStart: (d) => _onPanStart(d, imageDisplaySize),
+                onPanUpdate: (d) => _onPanUpdate(d, imageDisplaySize),
                 onPanEnd: _onPanEnd,
                 child: CustomPaint(
                   painter: _CropPainter(selection: _selection),
@@ -329,6 +373,24 @@ class _CropPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     canvas.drawRect(sel, border);
+
+    // Draw corner handles
+    const handleRadius = 8.0;
+    final handleFill = Paint()..color = Colors.white;
+    final handleStroke = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    void drawHandle(Offset p) {
+      canvas.drawCircle(p, handleRadius, handleFill);
+      canvas.drawCircle(p, handleRadius, handleStroke);
+    }
+
+    drawHandle(sel.topLeft);
+    drawHandle(sel.topRight);
+    drawHandle(sel.bottomLeft);
+    drawHandle(sel.bottomRight);
   }
 
   @override
