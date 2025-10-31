@@ -203,6 +203,12 @@ class _HistoryCard extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  // Bandera del idioma
+                  Text(
+                    entry.languageFlag,
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  const SizedBox(width: 8),
                   Icon(
                     Icons.text_snippet,
                     size: 20,
@@ -297,7 +303,36 @@ class _EntryDetailView extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Text('Texto Reconocido', style: theme.textTheme.titleLarge),
+                // Bandera e idioma
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          entry.languageFlag,
+                          style: const TextStyle(fontSize: 24),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Texto Reconocido',
+                          style: theme.textTheme.titleLarge,
+                        ),
+                      ],
+                    ),
+                    if (entry.recognizedLanguages.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          entry.languageName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.copy),

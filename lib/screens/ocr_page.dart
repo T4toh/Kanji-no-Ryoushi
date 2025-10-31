@@ -97,25 +97,27 @@ class _OCRPageState extends State<OCRPage> {
     });
 
     try {
-      final text = await _ocrService.processImageFromFile(_selectedImage!);
+      final result = await _ocrService.processImageFromFile(_selectedImage!);
 
       setState(() {
-        _recognizedText = text;
+        _recognizedText = result.text;
         _isProcessing = false;
       });
 
       // Guardar en historial si hay texto reconocido
-      if (text.isNotEmpty && text != 'No se reconoció texto') {
+      if (result.text.isNotEmpty && result.text != 'No se reconoció texto') {
         final entry = OCRHistoryEntry(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
-          text: text,
+          text: result.text,
           timestamp: DateTime.now(),
           imagePath: _selectedImage?.path,
+          recognizedLanguages: result.recognizedLanguages,
         );
         await _historyService.addEntry(entry);
       }
 
       debugPrint('Texto reconocido:\n$_recognizedText');
+      debugPrint('Idiomas detectados: ${result.recognizedLanguages}');
     } catch (e) {
       debugPrint('Error en OCR: $e');
       setState(() {
@@ -135,26 +137,28 @@ class _OCRPageState extends State<OCRPage> {
     });
 
     try {
-      final text = await _ocrService.processImageFromAssets(
+      final result = await _ocrService.processImageFromAssets(
         'assets/images/prueba_texto.png',
       );
 
       setState(() {
-        _recognizedText = text;
+        _recognizedText = result.text;
         _isProcessing = false;
       });
 
       // Guardar en historial
-      if (text.isNotEmpty && text != 'No se reconoció texto') {
+      if (result.text.isNotEmpty && result.text != 'No se reconoció texto') {
         final entry = OCRHistoryEntry(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
-          text: text,
+          text: result.text,
           timestamp: DateTime.now(),
+          recognizedLanguages: result.recognizedLanguages,
         );
         await _historyService.addEntry(entry);
       }
 
       debugPrint('Texto reconocido:\n$_recognizedText');
+      debugPrint('Idiomas detectados: ${result.recognizedLanguages}');
     } catch (e) {
       debugPrint('Error en OCR: $e');
       setState(() {

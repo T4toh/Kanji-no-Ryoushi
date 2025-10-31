@@ -11,7 +11,7 @@ class KanjiNoRyoushiApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Kanji no Ryoushi',
+      title: '漢字の漁師 🎣 🗾',
       debugShowCheckedModeBanner: false,
 
       // Tema claro

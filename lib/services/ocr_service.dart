@@ -3,6 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:path_provider/path_provider.dart';
 
+/// Resultado del OCR con texto e idiomas detectados
+class OCRResult {
+  final String text;
+  final List<String> recognizedLanguages;
+
+  OCRResult({required this.text, required this.recognizedLanguages});
+}
+
 /// Servicio para procesar imágenes con OCR usando Google ML Kit
 class OCRService {
   final TextRecognizer _textRecognizer;
@@ -11,7 +19,7 @@ class OCRService {
     : _textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
 
   /// Procesa una imagen desde assets y retorna el texto reconocido
-  Future<String> processImageFromAssets(String assetPath) async {
+  Future<OCRResult> processImageFromAssets(String assetPath) async {
     try {
       // Cargar imagen desde assets
       final data = await rootBundle.load(assetPath);
@@ -29,7 +37,7 @@ class OCRService {
   }
 
   /// Procesa un archivo de imagen y retorna el texto reconocido
-  Future<String> processImageFromFile(File imageFile) async {
+  Future<OCRResult> processImageFromFile(File imageFile) async {
     try {
       // Crear imagen de entrada
       final inputImage = InputImage.fromFile(imageFile);
@@ -37,7 +45,15 @@ class OCRService {
       // Procesar imagen
       final result = await _textRecognizer.processImage(inputImage);
 
-      return result.text.isEmpty ? 'No se reconoció texto' : result.text;
+      // Extraer idiomas únicos de todos los bloques
+      final Set<String> languages = {};
+      for (final block in result.blocks) {
+        languages.addAll(block.recognizedLanguages);
+      }
+
+      final text = result.text.isEmpty ? 'No se reconoció texto' : result.text;
+
+      return OCRResult(text: text, recognizedLanguages: languages.toList());
     } catch (e) {
       throw Exception('Error al procesar la imagen: $e');
     }

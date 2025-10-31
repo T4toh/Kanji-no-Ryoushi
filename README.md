@@ -1,4 +1,4 @@
-# Kanji no Ryoushi 🎣 🗾
+# 漢字の漁師 🎣 🗾
 
 Aplicación Flutter para reconocimiento de texto japonés (OCR) usando Google ML Kit.
 
@@ -16,6 +16,7 @@ Aplicación Flutter para reconocimiento de texto japonés (OCR) usando Google ML
 - 🎯 **Ícono personalizado**: Ícono único de la app
 - 📚 **Historial persistente**: Guarda automáticamente todos los textos reconocidos
 - 📦 **Bloques de texto**: Separa el texto en bloques para facilitar la copia
+- 🌍 **Detección de idioma**: Identifica automáticamente el idioma reconocido y muestra su bandera
 
 ### 🏗️ Arquitectura
 
@@ -66,6 +67,7 @@ flutter run
 4. **Ver resultado**: El texto reconocido aparece automáticamente y se guarda en el historial
 5. **Copiar texto**: Selecciona y copia el texto reconocido
 6. **Ver historial**: Toca el ícono de historial en la esquina superior derecha
+   - 🌍 **Idiomas detectados**: Cada entrada muestra la bandera del idioma reconocido
    - 📖 **Ver bloques**: Los textos se separan automáticamente en bloques
    - 📋 **Copiar bloques**: Copia bloques individuales o el texto completo
    - 🗑️ **Eliminar**: Elimina entradas individuales o todo el historial
@@ -101,6 +103,30 @@ El historial guarda automáticamente hasta 50 entradas. Los textos se separan en
 - **Líneas**: Cuando no hay párrafos, cada línea se convierte en un bloque
 
 Puedes copiar bloques individuales o el texto completo desde la vista de detalle.
+
+### Detección de Idioma
+
+La app detecta automáticamente el idioma del texto reconocido usando ML Kit.
+
+**Idiomas soportados con banderas:**
+
+- 🇯🇵 Japonés
+- 🇨🇳 Chino
+- 🇰🇷 Coreano
+- 🇺🇸 Inglés
+- 🇪🇸 Español
+- 🇫🇷 Francés
+- 🇩🇪 Alemán
+- 🇮🇹 Italiano
+- 🇵🇹 Portugués
+- 🇷🇺 Ruso
+- 🇸🇦 Árabe
+- 🇮🇳 Hindi
+- 🇹🇭 Tailandés
+- 🇻🇳 Vietnamita
+- 🌐 Y más...
+
+Las banderas aparecen automáticamente en el historial para identificar rápidamente el idioma del texto.
 
 ### Tema
 

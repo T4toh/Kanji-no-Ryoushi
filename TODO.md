@@ -1,4 +1,4 @@
-# Kanji no Ryoushi 🎣 🗾
+# 漢字の漁師 🎣 🗾
 
 ## TODO
 
