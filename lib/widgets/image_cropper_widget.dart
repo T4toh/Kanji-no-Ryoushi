@@ -175,10 +175,11 @@ class _ImageCropperWidgetState extends State<ImageCropperWidget> {
       );
       await widget.onCropped(croppedFile);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error al recortar: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }

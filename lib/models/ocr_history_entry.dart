@@ -140,11 +140,12 @@ class OCRHistoryEntry {
   /// Divide el texto en bloques separados por líneas vacías o saltos de línea
   List<String> get textBlocks {
     // Si tenemos bloques con texto, devolverlos
-    if (blocks.isNotEmpty)
+    if (blocks.isNotEmpty) {
       return blocks
           .map((b) => b.text)
           .where((t) => t.trim().isNotEmpty)
           .toList();
+    }
 
     if (text.isEmpty) return [];
 
