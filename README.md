@@ -1,16 +1,126 @@
-# kanji_no_ryoushi
+# Kanji no Ryoushi
 
-A new Flutter project.
+Aplicación Flutter para reconocimiento de texto japonés (OCR) usando Google ML Kit.
 
-## Getting Started
+## Características
 
-This project is a starting point for a Flutter application.
+### ✨ Funcionalidades Principales
 
-A few resources to get you started if this is your first Flutter project:
+- 📸 **Captura desde cámara**: Toma fotos directamente desde la app
+- 🖼️ **Selección de galería**: Elige imágenes existentes de tu teléfono
+- 🎌 **Reconocimiento de japonés**: OCR optimizado para texto japonés (Hiragana, Katakana, Kanji)
+- 📋 **Texto seleccionable**: Copia fácilmente el texto reconocido
+- 🔄 **Reprocesamiento**: Vuelve a procesar la misma imagen si es necesario
+- 🎨 **Imagen de ejemplo**: Prueba la app con una imagen de ejemplo incluida
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### 🏗️ Arquitectura
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```
+lib/
+├── main.dart              # Configuración de la app
+├── screens/
+│   └── ocr_page.dart     # Pantalla principal con UI
+└── services/
+    └── ocr_service.dart  # Lógica de OCR con ML Kit
+```
+
+**Modular y escalable**: Separación clara entre UI y lógica de negocio.
+
+## 🚀 Instalación y Uso
+
+### Prerrequisitos
+
+- Flutter SDK >= 3.9.2
+- Android Studio / Xcode (para compilar en dispositivos)
+
+### Instalación
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/T4toh/Kanji-no-Ryoushi.git
+cd kanji_no_ryoushi
+
+# Instalar dependencias
+flutter pub get
+
+# Ejecutar en dispositivo/emulador
+flutter run
+```
+
+### Uso de la App
+
+1. **Al abrir la app**: Se carga automáticamente una imagen de ejemplo
+2. **Seleccionar imagen**: Toca el botón "Seleccionar Imagen" o "Cambiar Imagen"
+3. **Elegir fuente**:
+   - 📷 **Cámara**: Toma una foto nueva
+   - 🖼️ **Galería**: Selecciona de tus fotos
+   - 🎴 **Imagen de ejemplo**: Vuelve al ejemplo predeterminado
+4. **Ver resultado**: El texto reconocido aparece automáticamente
+5. **Copiar texto**: Selecciona y copia el texto reconocido
+
+## 📱 Permisos
+
+### Android
+
+- Cámara
+- Lectura de almacenamiento externo
+- Lectura de imágenes (Android 13+)
+
+### iOS
+
+- Acceso a cámara
+- Acceso a biblioteca de fotos
+
+## 🛠️ Dependencias Principales
+
+- `google_mlkit_text_recognition`: OCR con ML Kit
+- `image_picker`: Selección de imágenes
+- `path_provider`: Gestión de archivos temporales
+
+## 📝 Desarrollo
+
+### Ejecutar tests
+
+```bash
+flutter test
+```
+
+### Analizar código
+
+```bash
+flutter analyze
+```
+
+### Compilar release
+
+```bash
+# Android
+flutter build apk
+
+# iOS
+flutter build ios
+```
+
+## 🔧 Configuración ML Kit
+
+### Android
+
+Dependencia nativa en `android/app/build.gradle.kts`:
+
+```kotlin
+dependencies {
+    implementation("com.google.mlkit:text-recognition-japanese:16.0.0")
+}
+```
+
+### iOS
+
+Configuración automática vía CocoaPods.
+
+## 📄 Licencia
+
+Este proyecto es de código abierto.
+
+---
+
+Desarrollado con ❤️ usando Flutter por un gordo barbudo.

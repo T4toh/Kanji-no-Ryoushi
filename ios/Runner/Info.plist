@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Esta app necesita acceso a la cámara para tomar fotos de texto japonés y reconocerlo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Esta app necesita acceso a tus fotos para seleccionar imágenes con texto japonés y reconocerlo.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Esta app necesita acceso para guardar imágenes procesadas.</string>
 </dict>
 </plist>
