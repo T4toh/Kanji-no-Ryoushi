@@ -1,5 +1,26 @@
 import 'dart:convert';
 
+/// Información de idioma por bloque de texto
+class OCRBlockInfo {
+  final String text;
+  final String? languageTag;
+  final double? confidence;
+
+  OCRBlockInfo({required this.text, this.languageTag, this.confidence});
+
+  Map<String, dynamic> toJson() => {
+    'text': text,
+    'languageTag': languageTag,
+    'confidence': confidence,
+  };
+
+  factory OCRBlockInfo.fromJson(Map<String, dynamic> json) => OCRBlockInfo(
+    text: json['text'] as String? ?? '',
+    languageTag: json['languageTag'] as String?,
+    confidence: (json['confidence'] as num?)?.toDouble(),
+  );
+}
+
 /// Entrada del historial de OCR
 class OCRHistoryEntry {
   final String id;
@@ -8,19 +29,30 @@ class OCRHistoryEntry {
   final String? imagePath;
   final List<String> recognizedLanguages;
 
+  /// Información por bloque: texto, idioma detectado y confianza
+  final List<OCRBlockInfo> blocks;
+
   OCRHistoryEntry({
     required this.id,
     required this.text,
     required this.timestamp,
     this.imagePath,
     this.recognizedLanguages = const [],
+    this.blocks = const [],
   });
 
   /// Obtiene la bandera emoji del idioma principal detectado
   String get languageFlag {
-    if (recognizedLanguages.isEmpty) return '🌐';
+    // Preferir idioma del primer bloque si está disponible
+    final firstLang = blocks.isNotEmpty && blocks.first.languageTag != null
+        ? blocks.first.languageTag!.toLowerCase()
+        : (recognizedLanguages.isNotEmpty
+              ? recognizedLanguages.first.toLowerCase()
+              : null);
 
-    final language = recognizedLanguages.first.toLowerCase();
+    if (firstLang == null) return '🌐';
+
+    final language = firstLang;
 
     // Mapeo de códigos de idioma a banderas emoji
     final languageFlags = {
@@ -60,9 +92,15 @@ class OCRHistoryEntry {
 
   /// Obtiene el nombre del idioma en español
   String get languageName {
-    if (recognizedLanguages.isEmpty) return 'Desconocido';
+    final firstLang = blocks.isNotEmpty && blocks.first.languageTag != null
+        ? blocks.first.languageTag!.toLowerCase()
+        : (recognizedLanguages.isNotEmpty
+              ? recognizedLanguages.first.toLowerCase()
+              : null);
 
-    final language = recognizedLanguages.first.toLowerCase();
+    if (firstLang == null) return 'Desconocido';
+
+    final language = firstLang;
 
     final languageNames = {
       'ja': 'Japonés',
@@ -101,6 +139,13 @@ class OCRHistoryEntry {
 
   /// Divide el texto en bloques separados por líneas vacías o saltos de línea
   List<String> get textBlocks {
+    // Si tenemos bloques con texto, devolverlos
+    if (blocks.isNotEmpty)
+      return blocks
+          .map((b) => b.text)
+          .where((t) => t.trim().isNotEmpty)
+          .toList();
+
     if (text.isEmpty) return [];
 
     // Separar por dobles saltos de línea (párrafos)
@@ -122,6 +167,7 @@ class OCRHistoryEntry {
       'timestamp': timestamp.toIso8601String(),
       'imagePath': imagePath,
       'recognizedLanguages': recognizedLanguages,
+      'blocks': blocks.map((b) => b.toJson()).toList(),
     };
   }
 
@@ -135,6 +181,11 @@ class OCRHistoryEntry {
       recognizedLanguages:
           (json['recognizedLanguages'] as List<dynamic>?)
               ?.map((e) => e as String)
+              .toList() ??
+          [],
+      blocks:
+          (json['blocks'] as List<dynamic>?)
+              ?.map((e) => OCRBlockInfo.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
     );

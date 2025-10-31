@@ -112,6 +112,7 @@ class _OCRPageState extends State<OCRPage> {
           timestamp: DateTime.now(),
           imagePath: _selectedImage?.path,
           recognizedLanguages: result.recognizedLanguages,
+          blocks: result.blocks,
         );
         await _historyService.addEntry(entry);
       }
@@ -153,6 +154,7 @@ class _OCRPageState extends State<OCRPage> {
           text: result.text,
           timestamp: DateTime.now(),
           recognizedLanguages: result.recognizedLanguages,
+          blocks: result.blocks,
         );
         await _historyService.addEntry(entry);
       }

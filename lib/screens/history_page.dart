@@ -278,7 +278,7 @@ class _EntryDetailView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final blocks = entry.textBlocks;
+    final blocks = entry.blocks;
 
     return Container(
       decoration: BoxDecoration(
@@ -360,9 +360,9 @@ class _EntryDetailView extends StatelessWidget {
               itemBuilder: (context, index) {
                 final block = blocks[index];
                 return _TextBlock(
-                  text: block,
+                  blockInfo: block,
                   blockNumber: blocks.length > 1 ? index + 1 : null,
-                  onCopy: () => _copyToClipboard(context, block),
+                  onCopy: () => _copyToClipboard(context, block.text),
                 );
               },
             ),
@@ -375,12 +375,12 @@ class _EntryDetailView extends StatelessWidget {
 
 /// Widget para un bloque de texto individual
 class _TextBlock extends StatelessWidget {
-  final String text;
+  final OCRBlockInfo blockInfo;
   final int? blockNumber;
   final VoidCallback onCopy;
 
   const _TextBlock({
-    required this.text,
+    required this.blockInfo,
     this.blockNumber,
     required this.onCopy,
   });
@@ -419,7 +419,22 @@ class _TextBlock extends StatelessWidget {
             ],
           ),
         const SizedBox(height: 8),
-        SelectableText(text, style: const TextStyle(fontSize: 18, height: 1.5)),
+        // Mostrar información de idioma y confianza si está disponible
+        if (blockInfo.languageTag != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6.0),
+            child: Text(
+              'Idioma: ${blockInfo.languageTag} • Confianza: ${blockInfo.confidence != null ? '${(blockInfo.confidence! * 100).toStringAsFixed(0)}%' : '–'}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        SelectableText(
+          blockInfo.text,
+          style: const TextStyle(fontSize: 18, height: 1.5),
+        ),
       ],
     );
   }
