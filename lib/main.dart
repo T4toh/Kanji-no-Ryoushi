@@ -17,7 +17,7 @@ class KanjiNoRyoushiApp extends StatelessWidget {
       // Tema claro
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
+          seedColor: Colors.indigoAccent,
           brightness: Brightness.light,
         ),
         useMaterial3: true,
@@ -42,7 +42,7 @@ class KanjiNoRyoushiApp extends StatelessWidget {
       // Tema oscuro
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
+          seedColor: Colors.indigoAccent,
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
