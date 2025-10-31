@@ -77,12 +77,14 @@ Menú interactivo con herramientas comunes de desarrollo.
 #### Flujo de Trabajo Recomendado
 
 Para preparar la app antes de un commit:
+
 ```bash
 ./dev.sh
 # Selecciona opción 8 (Todo)
 ```
 
 Para desarrollo diario:
+
 ```bash
 ./dev.sh
 # Selecciona opción 6 (Ejecutar app)

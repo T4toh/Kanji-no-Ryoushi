@@ -140,13 +140,17 @@ El script `generate_icons.sh` automatiza todo el proceso:
 El proyecto incluye scripts para facilitar tareas comunes:
 
 #### `./generate_icons.sh` - Regenerar Íconos
+
 Regenera automáticamente los íconos de la app para Android e iOS.
+
 ```bash
 ./generate_icons.sh
 ```
 
 #### `./dev.sh` - Herramientas de Desarrollo
+
 Menú interactivo con opciones para:
+
 - Ejecutar tests
 - Analizar código
 - Regenerar íconos
