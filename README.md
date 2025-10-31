@@ -1,4 +1,4 @@
-# Kanji no Ryoushi
+# Kanji no Ryoushi 🎣 🗾
 
 Aplicación Flutter para reconocimiento de texto japonés (OCR) usando Google ML Kit.
 
@@ -14,19 +14,25 @@ Aplicación Flutter para reconocimiento de texto japonés (OCR) usando Google ML
 - 🎨 **Imagen de ejemplo**: Prueba la app con una imagen de ejemplo incluida
 - 🌓 **Tema adaptativo**: Soporte completo para modo claro y oscuro
 - 🎯 **Ícono personalizado**: Ícono único de la app
+- 📚 **Historial persistente**: Guarda automáticamente todos los textos reconocidos
+- 📦 **Bloques de texto**: Separa el texto en bloques para facilitar la copia
 
 ### 🏗️ Arquitectura
 
 ```
 lib/
-├── main.dart              # Configuración de la app
+├── main.dart                   # Configuración de la app
+├── models/
+│   └── ocr_history_entry.dart # Modelo de entrada del historial
 ├── screens/
-│   └── ocr_page.dart     # Pantalla principal con UI
+│   ├── ocr_page.dart          # Pantalla principal con UI
+│   └── history_page.dart      # Pantalla de historial
 └── services/
-    └── ocr_service.dart  # Lógica de OCR con ML Kit
+    ├── ocr_service.dart       # Lógica de OCR con ML Kit
+    └── history_service.dart   # Gestión del historial persistente
 ```
 
-**Modular y escalable**: Separación clara entre UI y lógica de negocio.
+**Modular y escalable**: Separación clara entre UI, lógica de negocio y modelos.
 
 ## 🚀 Instalación y Uso
 
@@ -57,8 +63,12 @@ flutter run
    - 📷 **Cámara**: Toma una foto nueva
    - 🖼️ **Galería**: Selecciona de tus fotos
    - 🎴 **Imagen de ejemplo**: Vuelve al ejemplo predeterminado
-4. **Ver resultado**: El texto reconocido aparece automáticamente
+4. **Ver resultado**: El texto reconocido aparece automáticamente y se guarda en el historial
 5. **Copiar texto**: Selecciona y copia el texto reconocido
+6. **Ver historial**: Toca el ícono de historial en la esquina superior derecha
+   - 📖 **Ver bloques**: Los textos se separan automáticamente en bloques
+   - 📋 **Copiar bloques**: Copia bloques individuales o el texto completo
+   - 🗑️ **Eliminar**: Elimina entradas individuales o todo el historial
 
 ## 📱 Permisos
 
@@ -78,9 +88,19 @@ flutter run
 - `google_mlkit_text_recognition`: OCR con ML Kit
 - `image_picker`: Selección de imágenes
 - `path_provider`: Gestión de archivos temporales
+- `shared_preferences`: Almacenamiento persistente del historial
 - `flutter_launcher_icons`: Generación de íconos para la app
 
 ## 🎨 Personalización
+
+### Historial
+
+El historial guarda automáticamente hasta 50 entradas. Los textos se separan en bloques de las siguientes formas:
+
+- **Párrafos**: Bloques separados por líneas en blanco
+- **Líneas**: Cuando no hay párrafos, cada línea se convierte en un bloque
+
+Puedes copiar bloques individuales o el texto completo desde la vista de detalle.
 
 ### Tema
 
@@ -90,24 +110,71 @@ La app soporta automáticamente modo claro y oscuro siguiendo la configuración 
 
 Para cambiar el ícono de la app:
 
-1. Reemplaza `assets/images/icon.jpg` con tu imagen
-2. Ejecuta: `dart run flutter_launcher_icons`
+1. Reemplaza `assets/images/icon.jpg` con tu imagen (preferiblemente 1024x1024px)
+2. Ejecuta el script automático:
+
+   ```bash
+   ./generate_icons.sh
+   ```
+
+   O manualmente:
+
+   ```bash
+   flutter clean
+   flutter pub get
+   dart run flutter_launcher_icons
+   ```
+
+El script `generate_icons.sh` automatiza todo el proceso:
+
+- Verifica que exista el archivo de ícono
+- Limpia builds anteriores
+- Obtiene dependencias
+- Genera íconos para Android e iOS
+- Muestra confirmación y próximos pasos
 
 ## 📝 Desarrollo
 
-### Ejecutar tests
+### Scripts de Utilidad
+
+El proyecto incluye scripts para facilitar tareas comunes:
+
+#### `./generate_icons.sh` - Regenerar Íconos
+Regenera automáticamente los íconos de la app para Android e iOS.
+```bash
+./generate_icons.sh
+```
+
+#### `./dev.sh` - Herramientas de Desarrollo
+Menú interactivo con opciones para:
+- Ejecutar tests
+- Analizar código
+- Regenerar íconos
+- Limpiar proyecto
+- Obtener dependencias
+- Ejecutar app
+- Compilar APK
+- Ejecutar todo (limpieza completa + análisis + tests)
+
+```bash
+./dev.sh
+```
+
+### Comandos Manuales
+
+#### Ejecutar tests
 
 ```bash
 flutter test
 ```
 
-### Analizar código
+#### Analizar código
 
 ```bash
 flutter analyze
 ```
 
-### Compilar release
+#### Compilar release
 
 ```bash
 # Android

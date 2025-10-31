@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/ocr_service.dart';
+import '../services/history_service.dart';
+import '../models/ocr_history_entry.dart';
+import 'history_page.dart';
 
 /// Página principal para realizar pruebas de OCR con imágenes
 class OCRPage extends StatefulWidget {
@@ -14,6 +17,7 @@ class OCRPage extends StatefulWidget {
 class _OCRPageState extends State<OCRPage> {
   final OCRService _ocrService = OCRService();
   final ImagePicker _imagePicker = ImagePicker();
+  final HistoryService _historyService = HistoryService();
 
   String _recognizedText = '';
   bool _isProcessing = false;
@@ -100,6 +104,17 @@ class _OCRPageState extends State<OCRPage> {
         _isProcessing = false;
       });
 
+      // Guardar en historial si hay texto reconocido
+      if (text.isNotEmpty && text != 'No se reconoció texto') {
+        final entry = OCRHistoryEntry(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          text: text,
+          timestamp: DateTime.now(),
+          imagePath: _selectedImage?.path,
+        );
+        await _historyService.addEntry(entry);
+      }
+
       debugPrint('Texto reconocido:\n$_recognizedText');
     } catch (e) {
       debugPrint('Error en OCR: $e');
@@ -128,6 +143,16 @@ class _OCRPageState extends State<OCRPage> {
         _recognizedText = text;
         _isProcessing = false;
       });
+
+      // Guardar en historial
+      if (text.isNotEmpty && text != 'No se reconoció texto') {
+        final entry = OCRHistoryEntry(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          text: text,
+          timestamp: DateTime.now(),
+        );
+        await _historyService.addEntry(entry);
+      }
 
       debugPrint('Texto reconocido:\n$_recognizedText');
     } catch (e) {
@@ -187,6 +212,18 @@ class _OCRPageState extends State<OCRPage> {
       appBar: AppBar(
         title: const Text('Kanji no Ryoushi'),
         backgroundColor: theme.colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Ver historial',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HistoryPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
