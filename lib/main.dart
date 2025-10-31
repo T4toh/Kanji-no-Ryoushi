@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/ocr_page.dart';
+import 'screens/dictionary_page.dart';
 
 void main() {
   runApp(const KanjiNoRyoushiApp());
@@ -67,7 +68,34 @@ class KanjiNoRyoushiApp extends StatelessWidget {
       // Usar el tema del sistema
       themeMode: ThemeMode.system,
 
-      home: const OCRPage(),
+      home: const _HomeShell(),
+    );
+  }
+}
+
+class _HomeShell extends StatefulWidget {
+  const _HomeShell({Key? key}) : super(key: key);
+
+  @override
+  State<_HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends State<_HomeShell> {
+  int _idx = 0;
+  static const List<Widget> _pages = [OCRPage(), DictionaryPage()];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_idx],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _idx,
+        onTap: (i) => setState(() => _idx = i),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.photo_camera), label: 'OCR'),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Diccionario'),
+        ],
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/ocr_history_entry.dart';
 import '../services/history_service.dart';
+import '../widgets/character_selector.dart';
 
 /// Pantalla que muestra el historial de textos reconocidos
 class HistoryPage extends StatefulWidget {
@@ -104,9 +105,9 @@ class _HistoryPageState extends State<HistoryPage> {
       appBar: AppBar(
         title: GestureDetector(
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Kanji no Ryoushi')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Kanji no Ryoushi')));
           },
           child: Stack(
             alignment: Alignment.center,
@@ -444,8 +445,8 @@ class _TextBlock extends StatelessWidget {
               ),
             ),
           ),
-        SelectableText(
-          blockInfo.text,
+        CharacterSelector(
+          text: blockInfo.text,
           style: const TextStyle(fontSize: 18, height: 1.5),
         ),
       ],

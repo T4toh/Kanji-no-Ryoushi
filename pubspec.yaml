@@ -25,6 +25,12 @@ dependencies:
   shared_preferences: ^2.3.3
   # Image manipulation (crop/encode) in pure Dart
   image: ^4.0.17
+  # HTTP client for downloading dictionary
+  http: ^1.1.0
+  # Zip/tar archive handling
+  archive: ^3.3.0
+  sqflite: ^2.2.8
+  path: ^1.8.3
 
 dev_dependencies:
   flutter_test:

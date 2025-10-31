@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 import 'package:kanji_no_ryoushi/widgets/image_cropper_widget.dart';
+import 'package:kanji_no_ryoushi/widgets/character_selector.dart';
 import '../services/ocr_service.dart';
 import '../services/history_service.dart';
 import '../models/ocr_history_entry.dart';
@@ -406,8 +407,8 @@ class _OCRPageState extends State<OCRPage> {
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: SingleChildScrollView(
-                          child: SelectableText(
-                            _recognizedText,
+                          child: CharacterSelector(
+                            text: _recognizedText,
                             style: TextStyle(
                               fontSize: 18,
                               height: 1.5,
