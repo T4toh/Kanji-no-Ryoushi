@@ -82,12 +82,34 @@ class _HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<_HomeShell> {
   int _idx = 0;
-  static const List<Widget> _pages = [OCRPage(), DictionaryPage()];
+  String? _dictionarySearchText;
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      OCRPage(onSearchInDictionary: _searchInDictionary),
+      DictionaryPage(initialSearchText: _dictionarySearchText),
+    ];
+  }
+
+  void _searchInDictionary(String text) {
+    setState(() {
+      _idx = 1; // Cambiar a pestaña de diccionario
+      _dictionarySearchText = text;
+      // Recrear la página del diccionario con el nuevo texto
+      _pages[1] = DictionaryPage(
+        key: ValueKey(text + DateTime.now().toString()),
+        initialSearchText: text,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_idx],
+      body: IndexedStack(index: _idx, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _idx,
         onTap: (i) => setState(() => _idx = i),

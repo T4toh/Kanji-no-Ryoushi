@@ -4,11 +4,15 @@ import 'package:flutter/services.dart';
 
 /// Widget que muestra un texto dividido en "caracteres" (grapheme clusters)
 /// y permite seleccionar caracteres individuales para copiarlos.
+///
+/// Al mantener presionado un carácter, se copia al portapapeles y se busca
+/// en el diccionario (si se proporciona el callback onLongPress).
 class CharacterSelector extends StatefulWidget {
   final String text;
   final TextStyle? style;
   final Axis direction;
   final bool selectableAll; // show select all action
+  final void Function(String character)? onLongPress; // callback al mantener
 
   const CharacterSelector({
     super.key,
@@ -16,6 +20,7 @@ class CharacterSelector extends StatefulWidget {
     this.style,
     this.direction = Axis.horizontal,
     this.selectableAll = true,
+    this.onLongPress,
   });
 
   @override
@@ -110,10 +115,19 @@ class _CharacterSelectorState extends State<CharacterSelector> {
             return GestureDetector(
               onTap: () => _toggle(i),
               onLongPress: () {
+                // Copiar al portapapeles
                 Clipboard.setData(ClipboardData(text: ch));
+
+                // Mostrar mensaje
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Carácter copiado')),
+                  SnackBar(
+                    content: Text('「$ch」 copiado y buscando en diccionario...'),
+                    duration: const Duration(milliseconds: 1500),
+                  ),
                 );
+
+                // Callback para buscar en diccionario
+                widget.onLongPress?.call(ch);
               },
               child: Container(
                 padding: chipPadding,

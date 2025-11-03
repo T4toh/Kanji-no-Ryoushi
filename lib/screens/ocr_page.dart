@@ -12,7 +12,9 @@ import 'history_page.dart';
 
 /// Página principal para realizar pruebas de OCR con imágenes
 class OCRPage extends StatefulWidget {
-  const OCRPage({super.key});
+  final void Function(String text)? onSearchInDictionary;
+
+  const OCRPage({super.key, this.onSearchInDictionary});
 
   @override
   State<OCRPage> createState() => _OCRPageState();
@@ -414,6 +416,7 @@ class _OCRPageState extends State<OCRPage> {
                               height: 1.5,
                               color: theme.colorScheme.onSurface,
                             ),
+                            onLongPress: widget.onSearchInDictionary,
                           ),
                         ),
                       ),

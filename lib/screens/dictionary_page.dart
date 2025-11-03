@@ -5,7 +5,9 @@ import '../services/jitendex_service.dart';
 
 /// Página del diccionario Jitendex - busca palabras japonesas
 class DictionaryPage extends StatefulWidget {
-  const DictionaryPage({super.key});
+  final String? initialSearchText; // Texto inicial para buscar
+
+  const DictionaryPage({super.key, this.initialSearchText});
 
   @override
   State<DictionaryPage> createState() => _DictionaryPageState();
@@ -20,11 +22,40 @@ class _DictionaryPageState extends State<DictionaryPage> {
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
   String? _errorMessage;
+  bool _pendingSearch = false; // Marca si hay una búsqueda pendiente
+
+  /// Método público para buscar texto desde fuera (ej: desde OCR page)
+  void searchText(String text) {
+    _searchController.text = text;
+    _search();
+  }
 
   @override
   void initState() {
     super.initState();
     _initService();
+    // Si hay texto inicial, establecerlo y marcar búsqueda pendiente
+    if (widget.initialSearchText != null) {
+      _searchController.text = widget.initialSearchText!;
+      _pendingSearch = true; // Marcar que hay que buscar cuando esté listo
+    }
+  }
+
+  @override
+  void didUpdateWidget(DictionaryPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si llega un nuevo texto inicial, buscar
+    if (widget.initialSearchText != null &&
+        widget.initialSearchText != oldWidget.initialSearchText) {
+      _searchController.text = widget.initialSearchText!;
+      // Buscar inmediatamente si el servicio está listo
+      if (_isInitialized && _jitendexService != null) {
+        _search();
+      } else {
+        // Si no está listo, marcar que debe buscar cuando esté listo
+        _pendingSearch = true;
+      }
+    }
   }
 
   Future<void> _initService() async {
@@ -51,6 +82,12 @@ class _DictionaryPageState extends State<DictionaryPage> {
           _errorMessage = 'Base de datos no disponible';
         }
       });
+
+      // Si hay una búsqueda pendiente, ejecutarla ahora
+      if (_pendingSearch && _searchController.text.isNotEmpty) {
+        _pendingSearch = false;
+        _search();
+      }
     } catch (e) {
       setState(() {
         _isInitialized = true;
