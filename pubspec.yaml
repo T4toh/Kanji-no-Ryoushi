@@ -44,6 +44,7 @@ flutter:
   assets:
     - assets/images/prueba_texto.png
     - assets/images/icon.jpg
+    - assets/dicts/jitendex.db
 
 # Configuración del ícono de la app
 flutter_launcher_icons:
