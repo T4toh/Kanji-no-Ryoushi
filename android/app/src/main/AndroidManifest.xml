@@ -48,6 +48,13 @@
             android:exported="false"
             android:foregroundServiceType="mediaProjection"/>
         
+        <!-- Servicio para bubble flotante persistente -->
+        <service
+            android:name=".FloatingBubbleService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection"/>
+        
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

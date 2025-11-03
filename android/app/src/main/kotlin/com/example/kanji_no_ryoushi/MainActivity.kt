@@ -19,6 +19,7 @@ class MainActivity : FlutterActivity() {
     
     private var methodChannel: MethodChannel? = null
     private var pendingResult: MethodChannel.Result? = null
+    private var shouldStartCaptureOnResume = false
     
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -55,6 +56,30 @@ class MainActivity : FlutterActivity() {
                 "startScreenCapture" -> {
                     pendingResult = result
                     requestMediaProjection()
+                }
+                
+                "startFloatingBubble" -> {
+                    val serviceIntent = Intent(this, FloatingBubbleService::class.java).apply {
+                        action = FloatingBubbleService.ACTION_START_BUBBLE
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(serviceIntent)
+                    } else {
+                        startService(serviceIntent)
+                    }
+                    result.success(true)
+                }
+                
+                "stopFloatingBubble" -> {
+                    val serviceIntent = Intent(this, FloatingBubbleService::class.java).apply {
+                        action = FloatingBubbleService.ACTION_STOP_BUBBLE
+                    }
+                    startService(serviceIntent)
+                    result.success(true)
+                }
+                
+                "isFloatingBubbleRunning" -> {
+                    result.success(FloatingBubbleService.isRunning)
                 }
                 
                 else -> {
@@ -125,5 +150,24 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
         ScreenCaptureService.captureCallback = null
         methodChannel?.setMethodCallHandler(null)
+    }
+    
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        
+        // Manejar click desde el bubble flotante
+        if (intent.action == "com.example.kanji_no_ryoushi.TRIGGER_SCREEN_CAPTURE") {
+            shouldStartCaptureOnResume = true
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        
+        // Iniciar captura si viene del bubble
+        if (shouldStartCaptureOnResume) {
+            shouldStartCaptureOnResume = false
+            methodChannel?.invokeMethod("triggerScreenCaptureFromBubble", null)
+        }
     }
 }

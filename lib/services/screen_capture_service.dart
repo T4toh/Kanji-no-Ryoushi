@@ -28,6 +28,10 @@ class ScreenCaptureService {
       case 'onCaptureCancelled':
         onCaptureCancelled?.call();
         break;
+      case 'triggerScreenCaptureFromBubble':
+        // El bubble flotante quiere iniciar una captura
+        await captureWithPermissionCheck();
+        break;
     }
   }
 
@@ -84,5 +88,50 @@ class ScreenCaptureService {
 
     // Iniciar captura
     return await startScreenCapture();
+  }
+
+  /// Inicia el bubble flotante persistente
+  static Future<bool> startFloatingBubble() async {
+    try {
+      // Verificar permiso primero
+      bool hasPermission = await checkOverlayPermission();
+      if (!hasPermission) {
+        hasPermission = await requestOverlayPermission();
+      }
+
+      if (!hasPermission) {
+        return false;
+      }
+
+      final bool result = await _channel.invokeMethod('startFloatingBubble');
+      return result;
+    } catch (e) {
+      print('Error starting floating bubble: $e');
+      return false;
+    }
+  }
+
+  /// Detiene el bubble flotante
+  static Future<bool> stopFloatingBubble() async {
+    try {
+      final bool result = await _channel.invokeMethod('stopFloatingBubble');
+      return result;
+    } catch (e) {
+      print('Error stopping floating bubble: $e');
+      return false;
+    }
+  }
+
+  /// Verifica si el bubble flotante está activo
+  static Future<bool> isFloatingBubbleRunning() async {
+    try {
+      final bool result = await _channel.invokeMethod(
+        'isFloatingBubbleRunning',
+      );
+      return result;
+    } catch (e) {
+      print('Error checking bubble status: $e');
+      return false;
+    }
   }
 }

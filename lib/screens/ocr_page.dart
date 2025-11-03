@@ -31,6 +31,7 @@ class _OCRPageState extends State<OCRPage> {
   bool _isProcessing = false;
   File? _selectedImage;
   bool _isUsingExampleImage = true;
+  bool _isFloatingBubbleActive = false;
 
   @override
   void initState() {
@@ -44,6 +45,18 @@ class _OCRPageState extends State<OCRPage> {
     // Configurar callbacks para captura de pantalla
     ScreenCaptureService.onCaptureComplete = _handleCapturedImage;
     ScreenCaptureService.onCaptureCancelled = _handleCaptureCancelled;
+
+    // Verificar si el bubble ya está activo
+    _checkBubbleStatus();
+  }
+
+  Future<void> _checkBubbleStatus() async {
+    final isRunning = await ScreenCaptureService.isFloatingBubbleRunning();
+    if (mounted) {
+      setState(() {
+        _isFloatingBubbleActive = isRunning;
+      });
+    }
   }
 
   @override
@@ -117,6 +130,57 @@ class _OCRPageState extends State<OCRPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al iniciar la captura')),
+        );
+      }
+    }
+  }
+
+  /// Toggle del bubble flotante persistente
+  Future<void> _toggleFloatingBubble() async {
+    try {
+      if (_isFloatingBubbleActive) {
+        // Detener el bubble
+        await ScreenCaptureService.stopFloatingBubble();
+        if (mounted) {
+          setState(() {
+            _isFloatingBubbleActive = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Overlay flotante desactivado')),
+          );
+        }
+      } else {
+        // Iniciar el bubble
+        final started = await ScreenCaptureService.startFloatingBubble();
+        if (mounted) {
+          if (started) {
+            setState(() {
+              _isFloatingBubbleActive = true;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  '¡Overlay flotante activo! Tócalo para capturar desde cualquier app',
+                ),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Se requiere permiso de overlay',
+                ),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error toggling floating bubble: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al activar overlay flotante')),
         );
       }
     }
@@ -354,6 +418,17 @@ class _OCRPageState extends State<OCRPage> {
         ),
         backgroundColor: theme.colorScheme.inversePrimary,
         actions: [
+          // Toggle del bubble flotante persistente
+          IconButton(
+            icon: Icon(
+              _isFloatingBubbleActive ? Icons.bubble_chart : Icons.trip_origin,
+            ),
+            tooltip: _isFloatingBubbleActive
+                ? 'Desactivar overlay flotante'
+                : 'Activar overlay flotante',
+            color: _isFloatingBubbleActive ? Colors.green : null,
+            onPressed: _toggleFloatingBubble,
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'Ver historial',
