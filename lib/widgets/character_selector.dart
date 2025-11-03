@@ -75,13 +75,14 @@ class _CharacterSelectorState extends State<CharacterSelector> {
         if (_selected.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
-            child: Row(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Expanded(
-                  child: Text(
-                    'Seleccionados: ${_selected.length}',
-                    style: theme.textTheme.bodySmall,
-                  ),
+                Text(
+                  'Seleccionados: ${_selected.length}',
+                  style: theme.textTheme.bodySmall,
                 ),
                 if (widget.selectableAll)
                   TextButton(
@@ -98,6 +99,22 @@ class _CharacterSelectorState extends State<CharacterSelector> {
                   },
                   child: const Text('Copiar'),
                 ),
+                if (widget.onLongPress != null)
+                  TextButton.icon(
+                    onPressed: () {
+                      final text = _selectedText;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Buscando "$text" en diccionario...'),
+                          duration: const Duration(milliseconds: 1500),
+                        ),
+                      );
+                      widget.onLongPress?.call(text);
+                      _clear();
+                    },
+                    icon: const Icon(Icons.search, size: 18),
+                    label: const Text('Buscar'),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.clear),
                   onPressed: _clear,
@@ -115,19 +132,33 @@ class _CharacterSelectorState extends State<CharacterSelector> {
             return GestureDetector(
               onTap: () => _toggle(i),
               onLongPress: () {
-                // Copiar al portapapeles
-                Clipboard.setData(ClipboardData(text: ch));
-
-                // Mostrar mensaje
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('「$ch」 copiado y buscando en diccionario...'),
-                    duration: const Duration(milliseconds: 1500),
-                  ),
-                );
-
-                // Callback para buscar en diccionario
-                widget.onLongPress?.call(ch);
+                // Si hay selección múltiple, buscar todo el texto seleccionado
+                if (_selected.isNotEmpty) {
+                  final text = _selectedText;
+                  Clipboard.setData(ClipboardData(text: text));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '「$text」 copiado y buscando en diccionario...',
+                      ),
+                      duration: const Duration(milliseconds: 1500),
+                    ),
+                  );
+                  widget.onLongPress?.call(text);
+                  _clear();
+                } else {
+                  // Sin selección, buscar solo este carácter
+                  Clipboard.setData(ClipboardData(text: ch));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '「$ch」 copiado y buscando en diccionario...',
+                      ),
+                      duration: const Duration(milliseconds: 1500),
+                    ),
+                  );
+                  widget.onLongPress?.call(ch);
+                }
               },
               child: Container(
                 padding: chipPadding,

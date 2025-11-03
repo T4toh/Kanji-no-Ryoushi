@@ -245,6 +245,7 @@ class _OCRPageState extends State<OCRPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       appBar: AppBar(
@@ -278,7 +279,7 @@ class _OCRPageState extends State<OCRPage> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0 + bottomPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -399,6 +400,16 @@ class _OCRPageState extends State<OCRPage> {
                   ? Center(
                       child: Text(
                         'El texto reconocido aparecerá aquí',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 16,
+                        ),
+                      ),
+                    )
+                  : _recognizedText == 'No se reconoció texto'
+                  ? Center(
+                      child: Text(
+                        _recognizedText,
                         style: TextStyle(
                           color: theme.colorScheme.onSurfaceVariant,
                           fontSize: 16,

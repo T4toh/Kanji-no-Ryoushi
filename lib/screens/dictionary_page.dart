@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/dictionary_entry.dart';
 import '../services/jitendex_service.dart';
@@ -39,6 +40,10 @@ class _DictionaryPageState extends State<DictionaryPage> {
       _searchController.text = widget.initialSearchText!;
       _pendingSearch = true; // Marcar que hay que buscar cuando esté listo
     }
+    // Listener para actualizar UI cuando cambia el texto
+    _searchController.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
@@ -133,58 +138,82 @@ class _DictionaryPageState extends State<DictionaryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Diccionario Jitendex'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: Column(
-        children: [
-          // Barra de búsqueda
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Buscar palabra o lectura (ej: 食べる, たべる)',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            _results = [];
-                          });
-                        },
-                      )
-                    : null,
-                border: const OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _search(),
-              enabled: _isInitialized && _errorMessage == null,
-            ),
-          ),
-
-          // Botón de búsqueda
-          if (_isInitialized && _errorMessage == null)
+      body: Padding(
+        padding: EdgeInsets.only(bottom: bottomPadding),
+        child: Column(
+          children: [
+            // Barra de búsqueda
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _search,
-                  icon: const Icon(Icons.search),
-                  label: const Text('Buscar'),
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Buscar palabra o lectura (ej: 食べる, たべる)',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Botón de pegar
+                      IconButton(
+                        icon: const Icon(Icons.paste),
+                        tooltip: 'Pegar',
+                        onPressed: () async {
+                          final clipboardData = await Clipboard.getData(
+                            'text/plain',
+                          );
+                          if (clipboardData?.text != null) {
+                            _searchController.text = clipboardData!.text!;
+                            setState(() {});
+                          }
+                        },
+                      ),
+                      // Botón de limpiar (solo si hay texto)
+                      if (_searchController.text.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _results = [];
+                            });
+                          },
+                        ),
+                    ],
+                  ),
+                  border: const OutlineInputBorder(),
+                ),
+                onSubmitted: (_) => _search(),
+                enabled: _isInitialized && _errorMessage == null,
+              ),
+            ),
+
+            // Botón de búsqueda
+            if (_isInitialized && _errorMessage == null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _search,
+                    icon: const Icon(Icons.search),
+                    label: const Text('Buscar'),
+                  ),
                 ),
               ),
-            ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          // Contenido principal
-          Expanded(child: _buildContent()),
-        ],
+            // Contenido principal
+            Expanded(child: _buildContent()),
+          ],
+        ),
       ),
     );
   }

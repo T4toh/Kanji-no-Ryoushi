@@ -224,6 +224,8 @@ class _ImageCropperWidgetState extends State<ImageCropperWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         if (_intrinsicImage == null) {
@@ -308,7 +310,7 @@ class _ImageCropperWidgetState extends State<ImageCropperWidget> {
             Positioned(
               left: 16,
               right: 16,
-              bottom: 16,
+              bottom: 16 + bottomPadding,
               child: Row(
                 children: [
                   Expanded(

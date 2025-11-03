@@ -100,6 +100,7 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       appBar: AppBar(
@@ -156,7 +157,7 @@ class _HistoryPageState extends State<HistoryPage> {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomPadding),
               itemCount: _history.length,
               itemBuilder: (context, index) {
                 final entry = _history[index];
