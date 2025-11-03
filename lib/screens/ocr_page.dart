@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -7,6 +8,7 @@ import 'package:kanji_no_ryoushi/widgets/image_cropper_widget.dart';
 import 'package:kanji_no_ryoushi/widgets/character_selector.dart';
 import '../services/ocr_service.dart';
 import '../services/history_service.dart';
+import '../services/screen_capture_service.dart';
 import '../models/ocr_history_entry.dart';
 import 'history_page.dart';
 
@@ -35,12 +37,89 @@ class _OCRPageState extends State<OCRPage> {
     super.initState();
     // Cargar imagen de ejemplo al inicio
     _loadExampleImage();
+    
+    // Inicializar el servicio de captura de pantalla
+    ScreenCaptureService.initialize();
+    
+    // Configurar callbacks para captura de pantalla
+    ScreenCaptureService.onCaptureComplete = _handleCapturedImage;
+    ScreenCaptureService.onCaptureCancelled = _handleCaptureCancelled;
   }
 
   @override
   void dispose() {
     _ocrService.dispose();
+    // Limpiar callbacks
+    ScreenCaptureService.onCaptureComplete = null;
+    ScreenCaptureService.onCaptureCancelled = null;
     super.dispose();
+  }
+
+  /// Maneja la imagen capturada desde el overlay flotante
+  Future<void> _handleCapturedImage(Uint8List imageBytes) async {
+    try {
+      // Guardar bytes en archivo temporal
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File(
+        '${tempDir.path}/screen_capture_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
+      await tempFile.writeAsBytes(imageBytes);
+
+      setState(() {
+        _selectedImage = tempFile;
+        _isUsingExampleImage = false;
+      });
+
+      // Procesar la imagen capturada
+      await _processSelectedImage();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Captura procesada exitosamente')),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error al procesar captura: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al procesar la captura')),
+        );
+      }
+    }
+  }
+
+  /// Maneja la cancelación de captura
+  void _handleCaptureCancelled() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Captura cancelada')),
+      );
+    }
+  }
+
+  /// Inicia la captura de pantalla con overlay flotante
+  Future<void> _startScreenCapture() async {
+    try {
+      // Verificar y solicitar permisos si es necesario
+      final started = await ScreenCaptureService.captureWithPermissionCheck();
+
+      if (!started && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Se requiere permiso de overlay para capturar la pantalla',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error al iniciar captura: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al iniciar la captura')),
+        );
+      }
+    }
   }
 
   /// Abre el cropper en un modal con el archivo [file]. Al confirmar, reemplaza
@@ -224,6 +303,15 @@ class _OCRPageState extends State<OCRPage> {
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromCamera();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.screenshot),
+                title: const Text('Captura de pantalla'),
+                subtitle: const Text('Overlay flotante'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _startScreenCapture();
                 },
               ),
               ListTile(

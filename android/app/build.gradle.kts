@@ -24,7 +24,7 @@ android {
         applicationId = "com.example.kanji_no_ryoushi"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 29 // Android 10+ requerido para MediaProjection
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -52,5 +52,9 @@ flutter {
 
 
 dependencies {
+    dependencies {
     implementation("com.google.mlkit:text-recognition-japanese:16.0.0")
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+}
 }
