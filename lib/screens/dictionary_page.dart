@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Minimal stub for the Dictionary page. Dictionary functionality is disabled.
 class DictionaryPage extends StatelessWidget {
-  const DictionaryPage({Key? key}) : super(key: key);
+  const DictionaryPage({super.key});
 
   @override
   Widget build(BuildContext context) {

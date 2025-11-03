@@ -74,7 +74,7 @@ class KanjiNoRyoushiApp extends StatelessWidget {
 }
 
 class _HomeShell extends StatefulWidget {
-  const _HomeShell({Key? key}) : super(key: key);
+  const _HomeShell({super.key});
 
   @override
   State<_HomeShell> createState() => _HomeShellState();
