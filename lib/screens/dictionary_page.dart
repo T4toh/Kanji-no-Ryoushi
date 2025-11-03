@@ -17,6 +17,8 @@ class _DictionaryPageState extends State<DictionaryPage> {
   List<DictionaryEntry> _results = [];
   bool _isLoading = false;
   bool _isInitialized = false;
+  bool _isDownloading = false;
+  double _downloadProgress = 0.0;
   String? _errorMessage;
 
   @override
@@ -26,13 +28,25 @@ class _DictionaryPageState extends State<DictionaryPage> {
   }
 
   Future<void> _initService() async {
+    setState(() {
+      _isDownloading = true;
+      _downloadProgress = 0.0;
+    });
+
     try {
-      final service = await JitendexService.create();
+      final service = await JitendexService.create(
+        onDownloadProgress: (progress) {
+          setState(() {
+            _downloadProgress = progress;
+          });
+        },
+      );
       final available = await service.isAvailable();
 
       setState(() {
         _jitendexService = service;
         _isInitialized = true;
+        _isDownloading = false;
         if (!available) {
           _errorMessage = 'Base de datos no disponible';
         }
@@ -40,6 +54,7 @@ class _DictionaryPageState extends State<DictionaryPage> {
     } catch (e) {
       setState(() {
         _isInitialized = true;
+        _isDownloading = false;
         _errorMessage = 'Error al inicializar: $e';
       });
       print('Error inicializando JitendexService: $e');
@@ -138,16 +153,41 @@ class _DictionaryPageState extends State<DictionaryPage> {
   }
 
   Widget _buildContent() {
-    // Pantalla de carga inicial
+    // Pantalla de carga inicial / descarga
     if (!_isInitialized) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Inicializando diccionario...'),
-          ],
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 24),
+              Text(
+                _isDownloading
+                    ? 'Descargando diccionario...'
+                    : 'Inicializando diccionario...',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (_isDownloading && _downloadProgress > 0) ...[
+                const SizedBox(height: 16),
+                LinearProgressIndicator(value: _downloadProgress),
+                const SizedBox(height: 8),
+                Text(
+                  '${(_downloadProgress * 100).toStringAsFixed(0)}% completado',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '~112 MB - Primera descarga',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                ),
+              ],
+            ],
+          ),
         ),
       );
     }

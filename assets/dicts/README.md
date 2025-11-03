@@ -1,126 +1,61 @@
+# Jitendex Dictionary
 
-# Jitendex Parser
+This project uses the Jitendex dictionary for Japanese-English translations.
 
-This project provides a script to parse the Jitendex dictionary data and create a SQLite database for use in a Flutter application.
+## Automatic Download
 
-## What's in this repository?
+**The app automatically downloads the dictionary (~112 MB) on first launch.**
 
-*   `parser.py`: A Python script that parses the raw Jitendex data and creates the `jitendex.db` database.
-*   `jitendex.db`: A pre-built SQLite database containing the parsed dictionary data. You can use this directly in your Flutter app without running the parser script.
-*   `README.md`: This file, which provides instructions on how to use the database and the parser script.
-*   `.gitignore`: A file that tells Git to ignore the `jitendex.db` file, as it is a generated file.
-*   `verify_db.py`: A Python script to verify the integrity of the database.
+The database is downloaded from:
+https://github.com/T4toh/jitendex-parser/releases/download/v0.0.1/jitendex.db
 
-## Getting Started
+No manual setup is required! Just open the Dictionary tab and the app will:
 
-There are two ways to use this project:
+1. Check if the database exists locally
+2. Download it automatically if not found
+3. Display download progress
+4. Start using it immediately after download
 
-**1. Use the pre-built database (Recommended for most users)**
+## For Developers
 
-If you just want to use the dictionary data in your Flutter app, you can use the included `jitendex.db` file directly. Follow the instructions in the "How to Use" section below.
+If you want to include the database in your development assets folder:
 
-**2. Run the parser script yourself**
+## For Developers
 
-If you want to modify the parsing logic or use a different version of the Jitendex data, you can run the `parser.py` script. Here's how:
+If you want to include the database in your development assets folder:
 
-1.  **Download the data:** Download the "Jitendex for Yomitan" file from the [Jitendex downloads page](https://jitendex.org/pages/downloads.html).
-2.  **Unzip the data:** Unzip the downloaded file. This will create a number of `term_bank_*.json` files.
-3.  **Place the data:** Move the `term_bank_*.json` files into the root of this repository.
-4.  **Run the script:** Run the following command in your terminal:
+1. **Download the database manually:**
+   Download from the [releases page](https://github.com/T4toh/jitendex-parser/releases/download/v0.0.1/jitendex.db)
 
-    ```bash
-    python parser.py
-    ```
+2. **Place in assets:**
+   Put `jitendex.db` in `assets/dicts/` directory
 
-    This will create a new `jitendex.db` file.
+3. **Update pubspec.yaml:**
+   The database is already configured in the assets (though it's gitignored)
 
-## How to Use the Database in a Flutter App
-
-1.  **Add the database to your Flutter project:**
-
-    *   Copy the `jitendex.db` file to your Flutter project's `assets` folder. You may need to create this folder if it doesn't exist.
-    *   Add the following to your `pubspec.yaml` file to include the database in your app's assets:
-
-    ```yaml
-    flutter:
-      assets:
-        - assets/jitendex.db
-    ```
-
-2.  **Add the `sqflite` package to your project:**
-
-    *   Run the following command in your terminal:
-
-    ```bash
-    flutter pub add sqflite
-    ```
-
-3.  **Query the database in your Flutter app:**
-
-    *   Here is an example of how to open the database and query for a term:
-
-    ```dart
-    import 'package:flutter/services.dart' show rootBundle;
-    import 'dart:io';
-    import 'package:path/path.dart';
-    import 'package:sqflite/sqflite.dart';
-
-    Future<Database> getDatabase() async {
-      var databasesPath = await getDatabasesPath();
-      var path = join(databasesPath, "jitendex.db");
-
-      // Check if the database exists
-      var exists = await databaseExists(path);
-
-      if (!exists) {
-        // Should happen only the first time you launch your application
-        print("Creating new copy from asset");
-
-        // Make sure the parent directory exists
-        try {
-          await Directory(dirname(path)).create(recursive: true);
-        } catch (_) {}
-
-        // Copy from asset
-        ByteData data = await rootBundle.load(join("assets", "jitendex.db"));
-        List<int> bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-
-        // Write and flush the bytes written
-        await File(path).writeAsBytes(bytes, flush: true);
-      }
-
-      // open the database
-      return await openDatabase(path, readOnly: true);
-    }
-
-    Future<List<Map>> search(String term) async {
-      final db = await getDatabase();
-      final List<Map> results = await db.rawQuery(
-        '''
-        SELECT t.term, t.reading, d.definition
-        FROM terms t
-        INNER JOIN definitions d ON t.id = d.term_id
-        WHERE t.term = ?
-        ''', [term]);
-      return results;
-    }
-    ```
+The app will use the local copy as a fallback if the download fails.
 
 ## Database Schema
 
 The database consists of two tables:
 
-*   `terms`: This table contains the dictionary terms.
-    *   `id`: The primary key for the table.
-    *   `term`: The Japanese term (e.g., '食べる').
-    *   `reading`: The reading of the term (e.g., 'たべる').
-    *   `popularity`: A score representing the popularity of the term.
-    *   `sequence`: A unique identifier for the entry.
+- `terms`: Contains dictionary terms
 
-*   `definitions`: This table contains the definitions for the terms.
-    *   `id`: The primary key for the table.
-    *   `term_id`: A foreign key that references the `id` column in the `terms` table.
-    *   `definition`: The English definition of the term.
+  - `id`: Primary key
+  - `term`: Japanese term (e.g., '食べる')
+  - `reading`: Reading in hiragana/katakana (e.g., 'たべる')
+  - `popularity`: Popularity score (0-200, higher = more common)
+  - `sequence`: Unique JMdict identifier
+
+- `definitions`: Contains definitions for terms
+  - `id`: Primary key
+  - `term_id`: Foreign key to `terms.id`
+  - `definition`: Definition in JSON format (parsed by the app)
+
+## Credits
+
+- Dictionary data: [Jitendex](https://jitendex.org/)
+- Parser: [T4toh/jitendex-parser](https://github.com/T4toh/jitendex-parser)
 
 ## Example: Displaying Data in a Flutter App
 
