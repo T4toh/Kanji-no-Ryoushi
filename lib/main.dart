@@ -96,8 +96,12 @@ class _HomeShellState extends State<_HomeShell> {
 
   void _searchInDictionary(String text) {
     setState(() {
-      _idx = 1; // Cambiar a pestaña de diccionario
       _dictionarySearchText = text;
+      // Solo cambiar de tab en móvil (tablet lo muestra lado a lado)
+      final isTablet = MediaQuery.of(context).size.width >= 600;
+      if (!isTablet) {
+        _idx = 1; // Cambiar a pestaña de diccionario
+      }
       // Recrear la página del diccionario con el nuevo texto
       _pages[1] = DictionaryPage(
         key: ValueKey(text + DateTime.now().toString()),
@@ -108,16 +112,46 @@ class _HomeShellState extends State<_HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: _idx, children: _pages),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _idx,
-        onTap: (i) => setState(() => _idx = i),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.photo_camera), label: 'OCR'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Diccionario'),
-        ],
-      ),
-    );
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600;
+
+    if (isTablet) {
+      // Vista de tablet: mostrar OCR y diccionario lado a lado
+      return Scaffold(
+        body: Row(
+          children: [
+            // Panel izquierdo: OCR (60% en tablets normales, 50% en tablets grandes)
+            Expanded(flex: screenWidth >= 900 ? 1 : 3, child: _pages[0]),
+            // Divisor vertical
+            VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+            // Panel derecho: Diccionario (40% en tablets normales, 50% en tablets grandes)
+            Expanded(flex: screenWidth >= 900 ? 1 : 2, child: _pages[1]),
+          ],
+        ),
+      );
+    } else {
+      // Vista móvil: tabs como antes
+      return Scaffold(
+        body: IndexedStack(index: _idx, children: _pages),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _idx,
+          onTap: (i) => setState(() => _idx = i),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.photo_camera),
+              label: 'OCR',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.book),
+              label: 'Diccionario',
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
