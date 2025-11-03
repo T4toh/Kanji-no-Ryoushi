@@ -3,6 +3,7 @@
 ## ¿Qué hace esta funcionalidad?
 
 Permite capturar texto japonés desde **cualquier app** de tu dispositivo Android:
+
 - Navegador web
 - Aplicaciones de mensajería
 - Juegos
@@ -50,12 +51,13 @@ Permite capturar texto japonés desde **cualquier app** de tu dispositivo Androi
 
 ## Ventajas sobre Screenshot Normal
 
-| Método | Pasos | Precisión |
-|--------|-------|-----------|
-| **Screenshot tradicional** | Captura → Abrir galería → Seleccionar → Esperar OCR | ⭐⭐⭐ |
-| **Overlay flotante** | Captura → ¡Listo! | ⭐⭐⭐⭐⭐ |
+| Método                     | Pasos                                               | Precisión  |
+| -------------------------- | --------------------------------------------------- | ---------- |
+| **Screenshot tradicional** | Captura → Abrir galería → Seleccionar → Esperar OCR | ⭐⭐⭐     |
+| **Overlay flotante**       | Captura → ¡Listo!                                   | ⭐⭐⭐⭐⭐ |
 
 **Beneficios:**
+
 - ✅ **Más rápido**: Todo en un solo flujo
 - ✅ **Más preciso**: Seleccionas EXACTAMENTE el área que necesitas
 - ✅ **Más conveniente**: No llena tu galería de screenshots
@@ -64,6 +66,7 @@ Permite capturar texto japonés desde **cualquier app** de tu dispositivo Androi
 ## Casos de Uso
 
 ### ✅ Funciona Perfectamente
+
 - 📖 Manga digital
 - 🎮 Videojuegos
 - 🌐 Páginas web
@@ -73,6 +76,7 @@ Permite capturar texto japonés desde **cualquier app** de tu dispositivo Androi
 - 🏪 Capturas de apps de compras japonesas
 
 ### ⚠️ Limitaciones
+
 - ❌ Contenido Netflix/Prime Video (protección DRM)
 - ❌ Apps bancarias con protección de pantalla
 - ❌ Contenido marcado como "seguro" por la app
@@ -80,28 +84,35 @@ Permite capturar texto japonés desde **cualquier app** de tu dispositivo Androi
 ## Troubleshooting
 
 ### "No tengo el botón de Captura de pantalla"
+
 **Causa:** Solo disponible en Android 10 o superior  
 **Solución:** Actualiza tu dispositivo o usa galería/cámara normal
 
 ### "El overlay no aparece"
+
 **Causa:** Falta permiso "Mostrar sobre otras apps"  
-**Solución:** 
+**Solución:**
+
 1. Settings → Apps → Kanji no Ryoushi
 2. Permisos especiales → Mostrar sobre otras apps → Activar
 
 ### "Aparece todo negro en la captura"
+
 **Causa:** La app tiene protección de pantalla activa  
 **Solución:** Usa screenshot tradicional del sistema y luego selecciona desde galería
 
 ### "Se cierra solo"
+
 **Causa:** Android mató el servicio por batería  
 **Solución:**
+
 1. Settings → Apps → Kanji no Ryoushi
 2. Batería → Sin restricciones
 
 ## Privacidad y Seguridad
 
 🔒 **Tu privacidad está protegida:**
+
 - ❌ No se guardan capturas automáticamente
 - ❌ No se envía nada a servidores externos
 - ✅ Todo el procesamiento OCR es local (en tu dispositivo)
@@ -118,6 +129,7 @@ Permite capturar texto japonés desde **cualquier app** de tu dispositivo Androi
 ## Próximamente
 
 Funcionalidades planeadas:
+
 - 🎯 Quick Settings Tile (captura desde notificaciones)
 - 🔍 Zoom en overlay para texto pequeño
 - 📌 Guardar capturas favoritas

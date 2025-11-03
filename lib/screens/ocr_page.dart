@@ -37,10 +37,10 @@ class _OCRPageState extends State<OCRPage> {
     super.initState();
     // Cargar imagen de ejemplo al inicio
     _loadExampleImage();
-    
+
     // Inicializar el servicio de captura de pantalla
     ScreenCaptureService.initialize();
-    
+
     // Configurar callbacks para captura de pantalla
     ScreenCaptureService.onCaptureComplete = _handleCapturedImage;
     ScreenCaptureService.onCaptureCancelled = _handleCaptureCancelled;
@@ -91,9 +91,9 @@ class _OCRPageState extends State<OCRPage> {
   /// Maneja la cancelación de captura
   void _handleCaptureCancelled() {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Captura cancelada')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Captura cancelada')));
     }
   }
 

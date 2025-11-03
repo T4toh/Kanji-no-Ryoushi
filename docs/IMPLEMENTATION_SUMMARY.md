@@ -7,6 +7,7 @@ Se ha implementado exitosamente un sistema de overlay flotante para Android que 
 ## 🎯 Características Principales
 
 ### Funcionalidad
+
 - **Overlay flotante** que se muestra sobre cualquier app
 - **Selección interactiva** de área mediante drag
 - **Captura de pantalla** usando MediaProjection API
@@ -15,6 +16,7 @@ Se ha implementado exitosamente un sistema de overlay flotante para Android que 
 - **Procesamiento automático** de texto japonés
 
 ### Arquitectura
+
 - **Backend nativo**: Kotlin con Android Services
 - **Frontend**: Flutter con MethodChannel
 - **Comunicación bidireccional**: Callbacks para captura completa/cancelada
@@ -25,6 +27,7 @@ Se ha implementado exitosamente un sistema de overlay flotante para Android que 
 ### Nuevos Archivos
 
 #### Código Nativo (Kotlin)
+
 ```
 android/app/src/main/kotlin/com/example/kanji_no_ryoushi/
 ├── ScreenCaptureService.kt          # Servicio principal de captura (370 líneas)
@@ -32,12 +35,14 @@ android/app/src/main/kotlin/com/example/kanji_no_ryoushi/
 ```
 
 #### Código Flutter (Dart)
+
 ```
 lib/services/
 └── screen_capture_service.dart      # Wrapper Flutter del MethodChannel
 ```
 
 #### Documentación
+
 ```
 docs/
 ├── SCREEN_CAPTURE.md                # Documentación técnica completa
@@ -61,6 +66,7 @@ TODO.md                              # Actualizado con funcionalidad completada
 ## 🔧 Configuración Técnica
 
 ### Permisos Android
+
 ```xml
 SYSTEM_ALERT_WINDOW           # Overlay sobre otras apps
 FOREGROUND_SERVICE            # Servicio en foreground
@@ -69,12 +75,14 @@ POST_NOTIFICATIONS            # Notificación del servicio
 ```
 
 ### Dependencias
+
 ```kotlin
 androidx.core:core-ktx:1.12.0
 androidx.appcompat:appcompat:1.6.1
 ```
 
 ### Requisitos del Sistema
+
 - **Android 10+** (API 29+)
 - **Dispositivo real** recomendado (MediaProjection limitado en emuladores)
 - **~100 MB** de espacio
@@ -114,6 +122,7 @@ Mostrar texto reconocido
 ## 🎨 Componentes UI
 
 ### Overlay Nativo
+
 - **Fondo translúcido oscuro**: 66% opacidad
 - **Área seleccionada**: Transparente con borde verde
 - **Botón "Capturar"**: Bottom center
@@ -121,6 +130,7 @@ Mostrar texto reconocido
 - **Interacción**: Touch drag para seleccionar
 
 ### Flutter Integration
+
 - **Nuevo item en diálogo**: "Captura de pantalla" con icono 📸
 - **Snackbar feedback**: Confirmación/error de captura
 - **Auto-procesamiento**: OCR se ejecuta automáticamente
@@ -128,6 +138,7 @@ Mostrar texto reconocido
 ## ✅ Compliance Google Play
 
 ### Políticas Cumplidas
+
 - ✅ **No APIs privadas**: Solo APIs públicas documentadas
 - ✅ **Permisos explícitos**: Usuario otorga permisos en runtime
 - ✅ **Foreground service**: Notificación visible durante captura
@@ -136,6 +147,7 @@ Mostrar texto reconocido
 - ✅ **Publicable**: Cumple 100% con políticas de Google Play
 
 ### Versión Android Soportada
+
 - **Mínima**: Android 10 (API 29)
 - **Target**: API 34+ (recomendado)
 - **Máxima**: Sin límite superior
@@ -143,12 +155,14 @@ Mostrar texto reconocido
 ## 🚀 Próximos Pasos Sugeridos
 
 ### Testing Inmediato
+
 1. Compilar APK release: `./build_apk.sh release`
 2. Instalar en dispositivo Android 10+
 3. Ejecutar test cases de `docs/TESTING_SCREEN_CAPTURE.md`
 4. Verificar permisos y funcionalidad básica
 
 ### Mejoras Futuras
+
 - **Quick Settings Tile**: Captura rápida desde notificaciones
 - **Zoom overlay**: Para texto pequeño
 - **Ajustes de imagen**: Contraste/brillo pre-OCR
@@ -157,19 +171,20 @@ Mostrar texto reconocido
 
 ## 📊 Estadísticas del Código
 
-| Componente | Líneas | Archivos |
-|------------|--------|----------|
-| Kotlin nuevo | ~370 | 1 |
-| Kotlin modificado | ~100 | 1 |
-| Dart nuevo | ~90 | 1 |
-| Dart modificado | ~80 | 1 |
-| Configuración | ~30 | 2 |
-| Documentación | ~800 | 3 |
-| **TOTAL** | **~1,470** | **8** |
+| Componente        | Líneas     | Archivos |
+| ----------------- | ---------- | -------- |
+| Kotlin nuevo      | ~370       | 1        |
+| Kotlin modificado | ~100       | 1        |
+| Dart nuevo        | ~90        | 1        |
+| Dart modificado   | ~80        | 1        |
+| Configuración     | ~30        | 2        |
+| Documentación     | ~800       | 3        |
+| **TOTAL**         | **~1,470** | **8**    |
 
 ## 🎓 Conocimientos Aplicados
 
 ### Android Nativo
+
 - MediaProjection API
 - Foreground Services
 - WindowManager para overlays
@@ -178,12 +193,14 @@ Mostrar texto reconocido
 - MethodChannel para Flutter
 
 ### Flutter
+
 - Platform channels bidireccionales
 - Callbacks nativos
 - Uint8List para transferencia de imágenes
 - Integración con servicios existentes
 
 ### Best Practices
+
 - Lifecycle management de servicios
 - Memory leak prevention
 - Permission handling robusto

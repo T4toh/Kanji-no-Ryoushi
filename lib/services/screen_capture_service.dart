@@ -3,8 +3,9 @@ import 'package:flutter/services.dart';
 
 /// Servicio para capturar áreas de la pantalla usando overlay flotante en Android
 class ScreenCaptureService {
-  static const MethodChannel _channel =
-      MethodChannel('com.example.kanji_no_ryoushi/screen_capture');
+  static const MethodChannel _channel = MethodChannel(
+    'com.example.kanji_no_ryoushi/screen_capture',
+  );
 
   /// Callback que se ejecuta cuando se completa una captura
   static Function(Uint8List)? onCaptureComplete;
@@ -44,8 +45,9 @@ class ScreenCaptureService {
   /// Solicita permiso de overlay al usuario
   static Future<bool> requestOverlayPermission() async {
     try {
-      final bool result =
-          await _channel.invokeMethod('requestOverlayPermission');
+      final bool result = await _channel.invokeMethod(
+        'requestOverlayPermission',
+      );
       return result;
     } catch (e) {
       print('Error requesting overlay permission: $e');

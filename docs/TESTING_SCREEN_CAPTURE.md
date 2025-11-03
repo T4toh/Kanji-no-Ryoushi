@@ -17,6 +17,7 @@ flutter run --release
 ### 2. Otorgar permisos (primera vez)
 
 La app solicitará automáticamente:
+
 1. **Overlay permission**: Se abrirá Settings
 2. **MediaProjection**: Diálogo del sistema "Iniciar grabación de pantalla"
 
@@ -27,6 +28,7 @@ La app solicitará automáticamente:
 **Objetivo:** Verificar que el overlay aparece y captura correctamente
 
 **Pasos:**
+
 1. Abrir Kanji no Ryoushi
 2. Tocar "Seleccionar Imagen"
 3. Tocar "Captura de pantalla"
@@ -38,6 +40,7 @@ La app solicitará automáticamente:
 9. Verificar que OCR se ejecuta automáticamente
 
 **Resultado esperado:**
+
 - Overlay se muestra correctamente
 - Área seleccionada se visualiza con borde verde
 - Captura se procesa y muestra texto reconocido
@@ -49,6 +52,7 @@ La app solicitará automáticamente:
 **Objetivo:** Verificar captura sobre otras aplicaciones
 
 **Pasos:**
+
 1. Abrir Chrome y navegar a: `https://ja.wikipedia.org`
 2. Volver a Kanji no Ryoushi (sin cerrar Chrome)
 3. Iniciar "Captura de pantalla"
@@ -58,6 +62,7 @@ La app solicitará automáticamente:
 7. Capturar
 
 **Resultado esperado:**
+
 - Se captura contenido de Chrome
 - OCR reconoce texto japonés de Wikipedia
 
@@ -68,11 +73,13 @@ La app solicitará automáticamente:
 **Objetivo:** Verificar que la cancelación funciona correctamente
 
 **Pasos:**
+
 1. Iniciar captura
 2. Seleccionar área
 3. Tocar "Cancelar"
 
 **Resultado esperado:**
+
 - Overlay se cierra
 - Servicio se detiene
 - Snackbar muestra "Captura cancelada"
@@ -85,11 +92,13 @@ La app solicitará automáticamente:
 **Objetivo:** Verificar manejo de áreas muy pequeñas
 
 **Pasos:**
+
 1. Iniciar captura
 2. Hacer un tap sin arrastrar (área < 10px)
 3. Tocar "Capturar"
 
 **Resultado esperado:**
+
 - Se captura pantalla completa (fallback)
 - OCR procesa toda la imagen
 
@@ -100,12 +109,14 @@ La app solicitará automáticamente:
 **Objetivo:** Verificar manejo cuando se revoca permiso overlay
 
 **Pasos:**
+
 1. Settings → Apps → Kanji no Ryoushi
 2. Permisos especiales → Mostrar sobre otras apps → Desactivar
 3. Volver a la app
 4. Intentar captura
 
 **Resultado esperado:**
+
 - Snackbar muestra mensaje de error sobre permiso requerido
 - Se abre Settings automáticamente (si se usa `requestOverlayPermission()`)
 
@@ -116,10 +127,12 @@ La app solicitará automáticamente:
 **Objetivo:** Verificar que el servicio crea notificación correctamente
 
 **Pasos:**
+
 1. Iniciar captura
 2. Deslizar barra de notificaciones mientras overlay está activo
 
 **Resultado esperado:**
+
 - Notificación visible: "Captura de Pantalla Activa"
 - Icono de cámara
 - Al capturar, notificación desaparece automáticamente
@@ -131,10 +144,12 @@ La app solicitará automáticamente:
 **Objetivo:** Verificar que no hay memory leaks
 
 **Pasos:**
+
 1. Realizar 10 capturas consecutivas
 2. Verificar memoria en Android Studio Profiler
 
 **Resultado esperado:**
+
 - Memoria se mantiene estable
 - No hay crashes
 - Cada captura se procesa correctamente
@@ -146,11 +161,13 @@ La app solicitará automáticamente:
 **Objetivo:** Verificar comportamiento en landscape/portrait
 
 **Pasos:**
+
 1. Iniciar captura en portrait
 2. Rotar a landscape mientras overlay está activo
 3. Capturar
 
 **Resultado esperado:**
+
 - Overlay se adapta a nueva orientación
 - Captura refleja orientación correcta
 - Coordenadas de selección son correctas
@@ -162,11 +179,13 @@ La app solicitará automáticamente:
 ### ⚠️ Test 9: App con FLAG_SECURE
 
 **Setup:**
+
 1. Instalar app bancaria o Netflix
 2. Abrir contenido protegido
 3. Intentar capturar
 
 **Resultado esperado:**
+
 - Captura aparece negra (comportamiento normal de Android)
 - OCR no encuentra texto
 
@@ -175,11 +194,13 @@ La app solicitará automáticamente:
 ### ⚠️ Test 10: Batería Baja
 
 **Setup:**
+
 1. Configurar batería < 15%
 2. Activar modo ahorro de energía
 3. Intentar captura
 
 **Resultado esperado:**
+
 - Funciona normalmente (foreground service tiene prioridad)
 - O muestra mensaje si Android mata el servicio
 
@@ -223,6 +244,7 @@ adb logcat -s ScreenCaptureService:V MainActivity:V
 ### Forzar crash para testing
 
 En `ScreenCaptureService.kt`, agregar temporalmente:
+
 ```kotlin
 private fun processCapture() {
     throw RuntimeException("Test crash")
@@ -242,12 +264,12 @@ adb pull /sdcard/window_dump.xml
 
 ### Tiempos Esperados
 
-| Operación | Tiempo | Notas |
-|-----------|--------|-------|
-| Mostrar overlay | < 500ms | Desde tap hasta visible |
-| Captura + recorte | < 1000ms | Depende de resolución |
-| OCR (imagen pequeña) | 500-2000ms | 100x100px a 500x500px |
-| OCR (imagen grande) | 2000-5000ms | > 1000x1000px |
+| Operación            | Tiempo      | Notas                   |
+| -------------------- | ----------- | ----------------------- |
+| Mostrar overlay      | < 500ms     | Desde tap hasta visible |
+| Captura + recorte    | < 1000ms    | Depende de resolución   |
+| OCR (imagen pequeña) | 500-2000ms  | 100x100px a 500x500px   |
+| OCR (imagen grande)  | 2000-5000ms | > 1000x1000px           |
 
 ### Medir performance
 

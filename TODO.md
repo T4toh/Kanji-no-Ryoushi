@@ -5,6 +5,7 @@
 ### Completado ✅
 
 - **Overlay**: ✅ Sistema de captura flotante implementado (Android 10+)
+
   - Overlay que se muestra sobre otras apps
   - Selección de área interactiva con drag
   - MediaProjection para captura de pantalla
@@ -25,4 +26,3 @@
   - Zoom en overlay para texto pequeño
   - Ajustes de contraste/brillo pre-OCR
   - Historial de capturas guardadas
-

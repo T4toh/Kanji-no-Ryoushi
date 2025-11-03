@@ -3,6 +3,7 @@
 ## 🎯 Código Nativo (Kotlin)
 
 ### ScreenCaptureService.kt
+
 - [x] Servicio extendiendo `Service()`
 - [x] Implementación de `onCreate()`, `onStartCommand()`, `onBind()`
 - [x] Notificación foreground obligatoria
@@ -24,6 +25,7 @@
 - [x] onDestroy limpia WindowManager
 
 ### MainActivity.kt
+
 - [x] MethodChannel configurado en `configureFlutterEngine()`
 - [x] Método `checkOverlayPermission` implementado
 - [x] Método `requestOverlayPermission` con Intent a Settings
@@ -40,6 +42,7 @@
 ## 🎨 Código Flutter (Dart)
 
 ### screen_capture_service.dart
+
 - [x] MethodChannel con nombre único: `com.example.kanji_no_ryoushi/screen_capture`
 - [x] Método `initialize()` configura `setMethodCallHandler`
 - [x] Handler para `onCaptureComplete` recibe `Uint8List`
@@ -53,6 +56,7 @@
 - [x] Logs de debug con print()
 
 ### ocr_page.dart
+
 - [x] Import de `screen_capture_service.dart`
 - [x] `ScreenCaptureService.initialize()` en `initState()`
 - [x] Configuración de callbacks en `initState()`
@@ -70,6 +74,7 @@
 ## ⚙️ Configuración Android
 
 ### AndroidManifest.xml
+
 - [x] Permiso `SYSTEM_ALERT_WINDOW` declarado
 - [x] Permiso `FOREGROUND_SERVICE` declarado
 - [x] Permiso `FOREGROUND_SERVICE_MEDIA_PROJECTION` declarado
@@ -80,6 +85,7 @@
 - [x] `android:foregroundServiceType="mediaProjection"`
 
 ### build.gradle.kts
+
 - [x] `minSdk = 29` (Android 10+)
 - [x] `compileSdk` actualizado
 - [x] `targetSdk` actualizado
@@ -88,6 +94,7 @@
 - [x] Java 11 compatibility configurado
 
 ### proguard-rules.pro
+
 - [x] Keep `android.media.projection.**`
 - [x] Keep `android.media.ImageReader`
 - [x] Keep `android.hardware.display.**`
@@ -97,6 +104,7 @@
 ## 📝 Documentación
 
 ### Archivos Creados
+
 - [x] `docs/SCREEN_CAPTURE.md` - Documentación técnica completa
 - [x] `docs/SCREEN_CAPTURE_USER_GUIDE.md` - Guía de usuario
 - [x] `docs/TESTING_SCREEN_CAPTURE.md` - Plan de testing
@@ -104,6 +112,7 @@
 - [x] `SCREEN_CAPTURE_READY.md` - Status final
 
 ### Contenido Documentado
+
 - [x] Arquitectura del sistema
 - [x] Flujo de funcionamiento
 - [x] API pública Flutter
@@ -115,17 +124,20 @@
 - [x] Próximas mejoras sugeridas
 
 ### Actualizaciones
+
 - [x] `TODO.md` actualizado con feature completada
 
 ## 🔨 Compilación
 
 ### Debug Build
+
 - [x] `flutter build apk --debug` ejecutado
 - [x] Compilación exitosa sin errores
 - [x] APK generado: `build/app/outputs/flutter-apk/app-debug.apk`
 - [x] Tamaño verificado: 184 MB (debug mode)
 
 ### Análisis de Código
+
 - [x] `flutter analyze` ejecutado
 - [x] Solo warnings de linter (avoid_print) - no críticos
 - [x] Sin errores de compilación
@@ -134,11 +146,13 @@
 ## 🧪 Testing (Pendiente en Dispositivo Real)
 
 ### Pre-requisitos
+
 - [ ] Dispositivo Android 10+ conectado por USB
 - [ ] USB debugging habilitado
 - [ ] `adb devices` muestra dispositivo
 
 ### Flujo Básico
+
 - [ ] Instalar APK en dispositivo
 - [ ] Abrir app
 - [ ] Tocar "Seleccionar Imagen"
@@ -153,6 +167,7 @@
 - [ ] Verificar OCR automático
 
 ### Edge Cases
+
 - [ ] Cancelar captura
 - [ ] Selección muy pequeña
 - [ ] Captura desde otra app
@@ -163,6 +178,7 @@
 ## 🚀 Publicación (Futuro)
 
 ### Release Build
+
 - [ ] Configurar signing key
 - [ ] `flutter build appbundle --release`
 - [ ] Verificar ProGuard rules funcionan
@@ -170,6 +186,7 @@
 - [ ] Verificar tamaño de app bundle
 
 ### Google Play Store
+
 - [ ] Crear listing con capturas de pantalla
 - [ ] Describir funcionalidad de overlay
 - [ ] Explicar permisos requeridos
@@ -182,7 +199,7 @@
 **Compilación:** ✅ Exitosa  
 **Documentación:** ✅ Completa  
 **Testing:** ⏭️ Pendiente (requiere dispositivo real)  
-**Release:** ⏭️ Futuro  
+**Release:** ⏭️ Futuro
 
 ---
 
