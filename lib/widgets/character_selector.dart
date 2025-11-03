@@ -101,42 +101,39 @@ class _CharacterSelectorState extends State<CharacterSelector> {
               ],
             ),
           ),
-        SingleChildScrollView(
-          scrollDirection: widget.direction,
-          child: Wrap(
-            spacing: 2,
-            runSpacing: 2,
-            children: List.generate(_chars.length, (i) {
-              final ch = _chars[i];
-              final selected = _selected.contains(i);
-              return GestureDetector(
-                onTap: () => _toggle(i),
-                onLongPress: () {
-                  Clipboard.setData(ClipboardData(text: ch));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Carácter copiado')),
-                  );
-                },
-                child: Container(
-                  padding: chipPadding,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? theme.colorScheme.primary.withAlpha(
-                            (0.15 * 255).toInt(),
-                          )
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    ch,
-                    style:
-                        widget.style ??
-                        const TextStyle(fontSize: 18, height: 1.5),
-                  ),
+        Wrap(
+          spacing: 2,
+          runSpacing: 2,
+          children: List.generate(_chars.length, (i) {
+            final ch = _chars[i];
+            final selected = _selected.contains(i);
+            return GestureDetector(
+              onTap: () => _toggle(i),
+              onLongPress: () {
+                Clipboard.setData(ClipboardData(text: ch));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Carácter copiado')),
+                );
+              },
+              child: Container(
+                padding: chipPadding,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? theme.colorScheme.primary.withAlpha(
+                          (0.15 * 255).toInt(),
+                        )
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
                 ),
-              );
-            }),
-          ),
+                child: Text(
+                  ch,
+                  style:
+                      widget.style ??
+                      const TextStyle(fontSize: 18, height: 1.5),
+                ),
+              ),
+            );
+          }),
         ),
       ],
     );
