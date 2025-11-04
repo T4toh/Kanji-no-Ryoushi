@@ -18,9 +18,20 @@ class ScreenCaptureService {
   /// Callback que se ejecuta cuando expira el permiso MediaProjection
   static Function()? onPermissionExpired;
 
+  /// Captura pendiente que llegó antes de que se configurara el callback
+  static Uint8List? _pendingCapture;
+
   /// Inicializa el servicio y configura los callbacks
   static void initialize() {
     _channel.setMethodCallHandler(_handleMethodCall);
+  }
+
+  /// Procesa la captura pendiente si existe
+  static void processPendingCapture() {
+    if (_pendingCapture != null) {
+      onCaptureComplete?.call(_pendingCapture!);
+      _pendingCapture = null;
+    }
   }
 
   /// Maneja las llamadas desde el código nativo
@@ -28,7 +39,26 @@ class ScreenCaptureService {
     switch (call.method) {
       case 'onCaptureComplete':
         final Uint8List imageBytes = call.arguments as Uint8List;
-        onCaptureComplete?.call(imageBytes);
+
+        if (onCaptureComplete != null) {
+          onCaptureComplete?.call(imageBytes);
+        } else {
+          // Guardar captura pendiente y reintentar
+          _pendingCapture = imageBytes;
+
+          Future.delayed(
+            const Duration(milliseconds: 200),
+            processPendingCapture,
+          );
+          Future.delayed(
+            const Duration(milliseconds: 500),
+            processPendingCapture,
+          );
+          Future.delayed(
+            const Duration(milliseconds: 1000),
+            processPendingCapture,
+          );
+        }
         break;
       case 'onCaptureCancelled':
         onCaptureCancelled?.call();

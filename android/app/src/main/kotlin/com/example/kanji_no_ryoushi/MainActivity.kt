@@ -90,18 +90,39 @@ class MainActivity : FlutterActivity() {
         
         // Configurar callback para recibir capturas
         ScreenCaptureService.captureCallback = { imageBytes ->
-            activity.runOnUiThread {
+            android.util.Log.d("MainActivity", "=== captureCallback invocado ===")
+            android.util.Log.d("MainActivity", "imageBytes size: ${imageBytes?.size ?: 0}")
+            android.util.Log.d("MainActivity", "methodChannel: $methodChannel")
+            
+            runOnUiThread {
+                android.util.Log.d("MainActivity", "Ejecutando en UI thread")
+                
                 if (imageBytes != null) {
-                    methodChannel?.invokeMethod("onCaptureComplete", imageBytes)
+                    android.util.Log.d("MainActivity", "Invocando onCaptureComplete a Flutter con ${imageBytes.size} bytes")
+                    try {
+                        methodChannel?.invokeMethod("onCaptureComplete", imageBytes)
+                        android.util.Log.d("MainActivity", "invokeMethod completado exitosamente")
+                    } catch (e: Exception) {
+                        android.util.Log.e("MainActivity", "ERROR invocando method channel", e)
+                    }
                 } else {
-                    methodChannel?.invokeMethod("onCaptureCancelled", null)
+                    android.util.Log.d("MainActivity", "Invocando onCaptureCancelled a Flutter")
+                    try {
+                        methodChannel?.invokeMethod("onCaptureCancelled", null)
+                        android.util.Log.d("MainActivity", "invokeMethod(onCaptureCancelled) completado")
+                    } catch (e: Exception) {
+                        android.util.Log.e("MainActivity", "ERROR invocando onCaptureCancelled", e)
+                    }
                 }
             }
         }
         
         // Configurar callback para cuando expira el permiso
         ScreenCaptureService.permissionExpiredCallback = {
-            activity.runOnUiThread {
+            android.util.Log.d("MainActivity", "permissionExpiredCallback invocado")
+            
+            runOnUiThread {
+                android.util.Log.d("MainActivity", "Invocando onPermissionExpired a Flutter")
                 methodChannel?.invokeMethod("onPermissionExpired", null)
             }
         }

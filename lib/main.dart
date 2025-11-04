@@ -1,9 +1,44 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'screens/ocr_page.dart';
 import 'screens/dictionary_page.dart';
+import 'services/screen_capture_service.dart';
+
+// GlobalKey para acceder al OCRPage desde callbacks globales
+final GlobalKey<OCRPageState> ocrPageKey = GlobalKey<OCRPageState>();
 
 void main() {
+  // Inicializar Flutter binding PRIMERO
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Ahora sí podemos inicializar el servicio de captura de pantalla
+  ScreenCaptureService.initialize();
+
+  // Configurar callbacks GLOBALMENTE (antes de que OCRPage se monte)
+  ScreenCaptureService.onCaptureComplete = _globalHandleCapturedImage;
+  ScreenCaptureService.onCaptureCancelled = _globalHandleCaptureCancelled;
+  ScreenCaptureService.onMediaProjectionGranted =
+      _globalHandleMediaProjectionGranted;
+  ScreenCaptureService.onPermissionExpired = _globalHandlePermissionExpired;
+
   runApp(const KanjiNoRyoushiApp());
+}
+
+// Callbacks globales que redirigen a OCRPage
+void _globalHandleCapturedImage(Uint8List imageBytes) {
+  ocrPageKey.currentState?.handleCapturedImage(imageBytes);
+}
+
+void _globalHandleCaptureCancelled() {
+  ocrPageKey.currentState?.handleCaptureCancelled();
+}
+
+void _globalHandleMediaProjectionGranted() {
+  ocrPageKey.currentState?.handleMediaProjectionGranted();
+}
+
+void _globalHandlePermissionExpired() {
+  ocrPageKey.currentState?.handlePermissionExpired();
 }
 
 class KanjiNoRyoushiApp extends StatelessWidget {
@@ -89,7 +124,7 @@ class _HomeShellState extends State<_HomeShell> {
   void initState() {
     super.initState();
     _pages = [
-      OCRPage(onSearchInDictionary: _searchInDictionary),
+      OCRPage(key: ocrPageKey, onSearchInDictionary: _searchInDictionary),
       DictionaryPage(initialSearchText: _dictionarySearchText),
     ];
   }

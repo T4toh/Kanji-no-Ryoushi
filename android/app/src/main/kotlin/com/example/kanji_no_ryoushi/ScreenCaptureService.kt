@@ -56,6 +56,10 @@ class ScreenCaptureService : Service() {
     }
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        android.util.Log.d("ScreenCapture", "=== onStartCommand INICIADO ===")
+        android.util.Log.d("ScreenCapture", "intent.action = ${intent?.action}")
+        android.util.Log.d("ScreenCapture", "isCapturing = $isCapturing")
+        
         if (intent?.action == ACTION_START_CAPTURE) {
             // Evitar inicios duplicados
             if (isCapturing) {
@@ -67,6 +71,9 @@ class ScreenCaptureService : Service() {
             resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, 0)
             resultData = intent.getParcelableExtra(EXTRA_RESULT_DATA)
             
+            android.util.Log.d("ScreenCapture", "resultCode = $resultCode")
+            android.util.Log.d("ScreenCapture", "resultData = $resultData")
+            
             // Combinar MEDIA_PROJECTION (requerido) y SPECIAL_USE (para evitar restricciones)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(
@@ -75,13 +82,17 @@ class ScreenCaptureService : Service() {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION or 
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
                 )
+                android.util.Log.d("ScreenCapture", "startForeground() llamado con tipos múltiples")
             } else {
                 startForeground(NOTIFICATION_ID, createNotification())
+                android.util.Log.d("ScreenCapture", "startForeground() llamado (API < 34)")
             }
             
+            android.util.Log.d("ScreenCapture", "Llamando a showOverlay()...")
             showOverlay()
         }
         
+        android.util.Log.d("ScreenCapture", "=== onStartCommand FINALIZADO ===")
         return START_NOT_STICKY
     }
     
@@ -112,10 +123,17 @@ class ScreenCaptureService : Service() {
     }
     
     private fun showOverlay() {
+        android.util.Log.d("ScreenCapture", "=== showOverlay() INICIADO ===")
+        
+        // IMPORTANTE: Ocultar el bubble flotante mientras se muestra el overlay de captura
+        FloatingBubbleService.hideBubble()
+        
         // Primero obtener las métricas reales de la pantalla
         val metrics = DisplayMetrics()
         windowManager?.defaultDisplay?.getRealMetrics(metrics)
         val screenHeight = metrics.heightPixels
+        
+        android.util.Log.d("ScreenCapture", "Screen dimensions: ${metrics.widthPixels}x$screenHeight")
         
         val layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -126,14 +144,20 @@ class ScreenCaptureService : Service() {
                 @Suppress("DEPRECATION")
                 WindowManager.LayoutParams.TYPE_PHONE
             },
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+            // IMPORTANTE PARA MIUI: Remover FLAG_NOT_FOCUSABLE para que el overlay aparezca en primer plano
+            // El overlay NECESITA recibir foco para mostrarse sobre otras ventanas
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, // Mantener pantalla encendida durante captura
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             y = 0
+            // MIUI: Forzar que la ventana esté al frente
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
         }
         
         val container = FrameLayout(this)
@@ -142,10 +166,25 @@ class ScreenCaptureService : Service() {
         selectionView = SelectionOverlayView(this)
         container.addView(selectionView)
         
-        // Botón de captura
+        // Botón de captura (estilo Material Design elevado)
+        val captureButtonDrawable = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            setColor(Color.parseColor("#4CAF50"))
+            cornerRadius = 24f
+        }
+        
         val captureButton = Button(this).apply {
             text = "Capturar"
+            textSize = 16f
+            isAllCaps = false
+            setPadding(48, 24, 48, 24)
+            background = captureButtonDrawable
+            setTextColor(Color.WHITE)
+            elevation = 8f
+            stateListAnimator = null
+            
             setOnClickListener {
+                android.util.Log.d("ScreenCapture", "Botón CAPTURAR presionado")
                 captureScreen()
             }
         }
@@ -158,10 +197,25 @@ class ScreenCaptureService : Service() {
         }
         container.addView(captureButton, captureParams)
         
-        // Botón de cancelar
+        // Botón de cancelar (estilo Material Design elevado)
+        val cancelButtonDrawable = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            setColor(Color.parseColor("#5f6368"))
+            cornerRadius = 24f
+        }
+        
         val cancelButton = Button(this).apply {
             text = "Cancelar"
+            textSize = 16f
+            isAllCaps = false
+            setPadding(48, 24, 48, 24)
+            background = cancelButtonDrawable
+            setTextColor(Color.WHITE)
+            elevation = 8f
+            stateListAnimator = null
+            
             setOnClickListener {
+                android.util.Log.d("ScreenCapture", "Botón CANCELAR presionado")
                 captureCallback?.invoke(null)
                 stopOverlay()
             }
@@ -178,20 +232,28 @@ class ScreenCaptureService : Service() {
         
         overlayView = container
         windowManager?.addView(overlayView, layoutParams)
+        android.util.Log.d("ScreenCapture", "Overlay añadido a WindowManager")
+        android.util.Log.d("ScreenCapture", "=== showOverlay() FINALIZADO ===")
     }
     
     private fun captureScreen() {
+        android.util.Log.d("ScreenCapture", "=== captureScreen() INICIADO ===")
+        
         // Primero ocultar el overlay y esperar un momento
         hideOverlayTemporarily()
+        android.util.Log.d("ScreenCapture", "Overlay ocultado temporalmente")
         
         // Delay para que el overlay se oculte completamente
         Handler(Looper.getMainLooper()).postDelayed({
+            android.util.Log.d("ScreenCapture", "Iniciando creación de MediaProjection...")
+            
             val metrics = DisplayMetrics()
             windowManager?.defaultDisplay?.getRealMetrics(metrics)
             val width = metrics.widthPixels
             val height = metrics.heightPixels
             val density = metrics.densityDpi
             
+            android.util.Log.d("ScreenCapture", "Creando ImageReader: ${width}x${height}, density=$density")
             imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
             
             val mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
@@ -202,15 +264,19 @@ class ScreenCaptureService : Service() {
             mediaProjection = null
             
             try {
+                android.util.Log.d("ScreenCapture", "Obteniendo MediaProjection con resultCode=$resultCode")
                 mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, resultData!!)
+                android.util.Log.d("ScreenCapture", "MediaProjection obtenido: $mediaProjection")
                 
                 // Registrar callback requerido en Android 14+
                 mediaProjection?.registerCallback(object : MediaProjection.Callback() {
                     override fun onStop() {
                         super.onStop()
+                        android.util.Log.d("ScreenCapture", "MediaProjection.Callback.onStop() llamado")
                     }
                 }, Handler(Looper.getMainLooper()))
                 
+                android.util.Log.d("ScreenCapture", "Creando VirtualDisplay...")
                 virtualDisplay = mediaProjection?.createVirtualDisplay(
                     "ScreenCapture",
                     width,
@@ -221,9 +287,12 @@ class ScreenCaptureService : Service() {
                     null,
                     null
                 )
+                android.util.Log.d("ScreenCapture", "VirtualDisplay creado: $virtualDisplay")
                 
                 // Esperar un poco más para que la captura se complete
+                android.util.Log.d("ScreenCapture", "Esperando 200ms antes de procesar captura...")
                 Handler(Looper.getMainLooper()).postDelayed({
+                    android.util.Log.d("ScreenCapture", "Llamando a processCapture()...")
                     processCapture()
                 }, 200)
             } catch (e: SecurityException) {
@@ -239,10 +308,13 @@ class ScreenCaptureService : Service() {
                 stopOverlay()
             } catch (e: Exception) {
                 android.util.Log.e("ScreenCapture", "Error creando MediaProjection", e)
+                e.printStackTrace()
                 captureCallback?.invoke(null)
                 stopOverlay()
             }
         }, 100)
+        
+        android.util.Log.d("ScreenCapture", "=== captureScreen() configuración completada, esperando delay ===")
     }
     
     private fun hideOverlayTemporarily() {
@@ -250,14 +322,25 @@ class ScreenCaptureService : Service() {
     }
     
     private fun processCapture() {
+        android.util.Log.d("ScreenCapture", "=== processCapture() INICIADO ===")
+        
         try {
+            android.util.Log.d("ScreenCapture", "Adquiriendo imagen del ImageReader...")
             val image = imageReader?.acquireLatestImage()
+            
             if (image != null) {
+                android.util.Log.d("ScreenCapture", "Imagen adquirida: ${image.width}x${image.height}")
+                
                 val selectionRect = selectionView?.getSelectionRect()
                 val overlaySize = selectionView?.let { Point(it.width, it.height) }
                 
+                android.util.Log.d("ScreenCapture", "SelectionRect: $selectionRect")
+                android.util.Log.d("ScreenCapture", "OverlaySize: $overlaySize")
+                
+                android.util.Log.d("ScreenCapture", "Convirtiendo Image a Bitmap...")
                 val bitmap = imageToBitmap(image)
                 image.close()
+                android.util.Log.d("ScreenCapture", "Bitmap creado: ${bitmap.width}x${bitmap.height}")
                 
                 // Escalar el rectángulo de selección a las coordenadas del bitmap
                 // El overlay puede tener diferente tamaño que el bitmap (barras de sistema)
@@ -270,6 +353,8 @@ class ScreenCaptureService : Service() {
                     val scaleX = bitmap.width.toFloat() / overlaySize.x.toFloat()
                     val scaleY = bitmap.height.toFloat() / overlaySize.y.toFloat()
                     
+                    android.util.Log.d("ScreenCapture", "Escalas: scaleX=$scaleX, scaleY=$scaleY")
+                    
                     // Escalar coordenadas del rectángulo
                     val scaledLeft = (selectionRect.left * scaleX).toInt()
                     val scaledTop = (selectionRect.top * scaleY).toInt()
@@ -279,11 +364,14 @@ class ScreenCaptureService : Service() {
                     val scaledWidth = scaledRight - scaledLeft
                     val scaledHeight = scaledBottom - scaledTop
                     
+                    android.util.Log.d("ScreenCapture", "Rectángulo escalado: left=$scaledLeft, top=$scaledTop, width=$scaledWidth, height=$scaledHeight")
+                    
                     // Validar que las coordenadas escaladas estén dentro del bitmap
                     if (scaledLeft >= 0 && scaledTop >= 0 && 
                         scaledRight <= bitmap.width && scaledBottom <= bitmap.height &&
                         scaledWidth > 0 && scaledHeight > 0
                     ) {
+                        android.util.Log.d("ScreenCapture", "Recortando bitmap...")
                         Bitmap.createBitmap(
                             bitmap,
                             scaledLeft,
@@ -292,36 +380,42 @@ class ScreenCaptureService : Service() {
                             scaledHeight
                         )
                     } else {
+                        android.util.Log.w("ScreenCapture", "Coordenadas inválidas, usando bitmap completo")
                         bitmap
                     }
                 } else {
+                    android.util.Log.d("ScreenCapture", "No hay selección, usando bitmap completo")
                     bitmap
                 }
                 
+                android.util.Log.d("ScreenCapture", "Bitmap final: ${croppedBitmap.width}x${croppedBitmap.height}")
+                android.util.Log.d("ScreenCapture", "Convirtiendo bitmap a ByteArray...")
                 val byteArray = bitmapToByteArray(croppedBitmap)
+                android.util.Log.d("ScreenCapture", "ByteArray creado: ${byteArray.size} bytes")
                 
                 // Enviar a Flutter
+                android.util.Log.d("ScreenCapture", "Invocando captureCallback...")
                 captureCallback?.invoke(byteArray)
                 
-                // Pequeño delay para asegurar que el callback se procese
-                Handler(Looper.getMainLooper()).postDelayed({
-                    // Abrir la app automáticamente con la captura
-                    val appIntent = Intent(this, MainActivity::class.java).apply {
-                        action = Intent.ACTION_MAIN
-                        addCategory(Intent.CATEGORY_LAUNCHER)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
-                                Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                                Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    }
-                    startActivity(appIntent)
-                }, 300)
+                // Abrir la app DESPUÉS de capturar para que procese la captura pendiente
+                android.util.Log.d("ScreenCapture", "Abriendo MainActivity para procesar captura...")
+                val appIntent = Intent(this, MainActivity::class.java).apply {
+                    action = Intent.ACTION_MAIN
+                    addCategory(Intent.CATEGORY_LAUNCHER)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                startActivity(appIntent)
                 
                 bitmap.recycle()
                 if (croppedBitmap != bitmap) {
                     croppedBitmap.recycle()
                 }
+                
+                android.util.Log.d("ScreenCapture", "Captura procesada exitosamente")
             } else {
-                android.util.Log.e("ScreenCapture", "No se pudo obtener imagen")
+                android.util.Log.e("ScreenCapture", "No se pudo obtener imagen del ImageReader")
                 captureCallback?.invoke(null)
             }
         } catch (e: Exception) {
@@ -329,11 +423,14 @@ class ScreenCaptureService : Service() {
             e.printStackTrace()
             captureCallback?.invoke(null)
         } finally {
+            android.util.Log.d("ScreenCapture", "Cerrando overlay después de captura...")
             // Delay antes de cerrar el overlay para permitir que el Intent se procese
             Handler(Looper.getMainLooper()).postDelayed({
                 stopOverlay()
             }, 500)
         }
+        
+        android.util.Log.d("ScreenCapture", "=== processCapture() FINALIZADO ===")
     }
     
     private fun imageToBitmap(image: Image): Bitmap {
@@ -375,11 +472,18 @@ class ScreenCaptureService : Service() {
     }
     
     private fun stopOverlay() {
+        android.util.Log.d("ScreenCapture", "=== stopOverlay() INICIADO ===")
+        
+        // Mostrar el bubble de nuevo
+        FloatingBubbleService.showBubble()
+        
         try {
             overlayView?.let {
                 windowManager?.removeView(it)
+                android.util.Log.d("ScreenCapture", "Overlay removido de WindowManager")
             }
         } catch (e: Exception) {
+            android.util.Log.e("ScreenCapture", "Error removiendo overlay", e)
             e.printStackTrace()
         }
         
@@ -394,6 +498,8 @@ class ScreenCaptureService : Service() {
         isCapturing = false
         stopForeground(true)
         stopSelf()
+        
+        android.util.Log.d("ScreenCapture", "=== stopOverlay() FINALIZADO ===")
     }
     
     private fun cleanup() {

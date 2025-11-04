@@ -19,10 +19,11 @@ class OCRPage extends StatefulWidget {
   const OCRPage({super.key, this.onSearchInDictionary});
 
   @override
-  State<OCRPage> createState() => _OCRPageState();
+  State<OCRPage> createState() => OCRPageState();
 }
 
-class _OCRPageState extends State<OCRPage> {
+// State público para poder ser accedido desde main.dart
+class OCRPageState extends State<OCRPage> with WidgetsBindingObserver {
   final OCRService _ocrService = OCRService();
   final ImagePicker _imagePicker = ImagePicker();
   final HistoryService _historyService = HistoryService();
@@ -36,21 +37,33 @@ class _OCRPageState extends State<OCRPage> {
   @override
   void initState() {
     super.initState();
+
+    // Registrar observer para detectar cuando la app vuelve al foreground
+    WidgetsBinding.instance.addObserver(this);
+
     // Cargar imagen de ejemplo al inicio
     _loadExampleImage();
 
-    // Inicializar el servicio de captura de pantalla
-    ScreenCaptureService.initialize();
-
-    // Configurar callbacks para captura de pantalla
-    ScreenCaptureService.onCaptureComplete = _handleCapturedImage;
-    ScreenCaptureService.onCaptureCancelled = _handleCaptureCancelled;
-    ScreenCaptureService.onMediaProjectionGranted =
-        _handleMediaProjectionGranted;
-    ScreenCaptureService.onPermissionExpired = _handlePermissionExpired;
-
     // Verificar si el bubble ya está activo
     _checkBubbleStatus();
+
+    // Procesar captura pendiente si existe
+    ScreenCaptureService.processPendingCapture();
+
+    // NO configurar callbacks aquí - se configuran globalmente en main.dart
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    debugPrint('[OCRPage] App lifecycle changed to: $state');
+
+    // Cuando la app vuelve al foreground, procesar captura pendiente
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('[OCRPage] App resumed - verificando captura pendiente');
+      ScreenCaptureService.processPendingCapture();
+    }
   }
 
   Future<void> _checkBubbleStatus() async {
@@ -64,17 +77,16 @@ class _OCRPageState extends State<OCRPage> {
 
   @override
   void dispose() {
+    // Remover observer
+    WidgetsBinding.instance.removeObserver(this);
+
     _ocrService.dispose();
-    // Limpiar callbacks
-    ScreenCaptureService.onCaptureComplete = null;
-    ScreenCaptureService.onCaptureCancelled = null;
-    ScreenCaptureService.onMediaProjectionGranted = null;
-    ScreenCaptureService.onPermissionExpired = null;
+    // NO limpiar callbacks - son globales
     super.dispose();
   }
 
-  /// Maneja la imagen capturada desde el overlay flotante
-  Future<void> _handleCapturedImage(Uint8List imageBytes) async {
+  /// Maneja la imagen capturada desde el overlay flotante (método público)
+  Future<void> handleCapturedImage(Uint8List imageBytes) async {
     debugPrint('=== CAPTURA RECIBIDA: ${imageBytes.length} bytes ===');
     try {
       // Guardar bytes en archivo temporal
@@ -127,8 +139,8 @@ class _OCRPageState extends State<OCRPage> {
     }
   }
 
-  /// Maneja la cancelación de captura
-  void _handleCaptureCancelled() {
+  /// Maneja la cancelación de captura (método público)
+  void handleCaptureCancelled() {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
@@ -136,8 +148,8 @@ class _OCRPageState extends State<OCRPage> {
     }
   }
 
-  /// Maneja cuando se otorga el permiso MediaProjection por primera vez
-  void _handleMediaProjectionGranted() {
+  /// Maneja cuando se otorga el permiso MediaProjection por primera vez (método público)
+  void handleMediaProjectionGranted() {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -151,8 +163,8 @@ class _OCRPageState extends State<OCRPage> {
     }
   }
 
-  /// Maneja cuando expira el permiso MediaProjection
-  void _handlePermissionExpired() {
+  /// Maneja cuando expira el permiso MediaProjection (método público)
+  void handlePermissionExpired() {
     debugPrint(
       '⚠️ Permiso de MediaProjection expirado, solicitando de nuevo...',
     );
