@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -7,6 +8,7 @@ import 'package:kanji_no_ryoushi/widgets/image_cropper_widget.dart';
 import 'package:kanji_no_ryoushi/widgets/character_selector.dart';
 import '../services/ocr_service.dart';
 import '../services/history_service.dart';
+import '../services/screen_capture_service.dart';
 import '../models/ocr_history_entry.dart';
 import 'history_page.dart';
 
@@ -29,18 +31,219 @@ class _OCRPageState extends State<OCRPage> {
   bool _isProcessing = false;
   File? _selectedImage;
   bool _isUsingExampleImage = true;
+  bool _isFloatingBubbleActive = false;
 
   @override
   void initState() {
     super.initState();
     // Cargar imagen de ejemplo al inicio
     _loadExampleImage();
+
+    // Inicializar el servicio de captura de pantalla
+    ScreenCaptureService.initialize();
+
+    // Configurar callbacks para captura de pantalla
+    ScreenCaptureService.onCaptureComplete = _handleCapturedImage;
+    ScreenCaptureService.onCaptureCancelled = _handleCaptureCancelled;
+    ScreenCaptureService.onMediaProjectionGranted =
+        _handleMediaProjectionGranted;
+    ScreenCaptureService.onPermissionExpired = _handlePermissionExpired;
+
+    // Verificar si el bubble ya está activo
+    _checkBubbleStatus();
+  }
+
+  Future<void> _checkBubbleStatus() async {
+    final isRunning = await ScreenCaptureService.isFloatingBubbleRunning();
+    if (mounted) {
+      setState(() {
+        _isFloatingBubbleActive = isRunning;
+      });
+    }
   }
 
   @override
   void dispose() {
     _ocrService.dispose();
+    // Limpiar callbacks
+    ScreenCaptureService.onCaptureComplete = null;
+    ScreenCaptureService.onCaptureCancelled = null;
+    ScreenCaptureService.onMediaProjectionGranted = null;
+    ScreenCaptureService.onPermissionExpired = null;
     super.dispose();
+  }
+
+  /// Maneja la imagen capturada desde el overlay flotante
+  Future<void> _handleCapturedImage(Uint8List imageBytes) async {
+    debugPrint('=== CAPTURA RECIBIDA: ${imageBytes.length} bytes ===');
+    try {
+      // Guardar bytes en archivo temporal
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File(
+        '${tempDir.path}/screen_capture_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
+      await tempFile.writeAsBytes(imageBytes);
+      debugPrint('Archivo temporal guardado: ${tempFile.path}');
+
+      setState(() {
+        _selectedImage = tempFile;
+        _isUsingExampleImage = false;
+      });
+
+      debugPrint('Iniciando procesamiento OCR...');
+      // Procesar la imagen capturada
+      await _processSelectedImage();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('✅ Captura procesada exitosamente'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'INFO',
+              textColor: Colors.white,
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'ℹ️ Por seguridad de Android 14+, el permiso de captura se invalida después de cada uso. La próxima captura pedirá permiso de nuevo.',
+                    ),
+                    duration: Duration(seconds: 5),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }
+      debugPrint('=== CAPTURA COMPLETADA ===');
+    } catch (e) {
+      debugPrint('!!! ERROR al procesar captura: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al procesar la captura: $e')),
+        );
+      }
+    }
+  }
+
+  /// Maneja la cancelación de captura
+  void _handleCaptureCancelled() {
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Captura cancelada')));
+    }
+  }
+
+  /// Maneja cuando se otorga el permiso MediaProjection por primera vez
+  void _handleMediaProjectionGranted() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '✅ ¡Permiso otorgado! Ahora toca el ícono flotante para capturar desde cualquier app',
+          ),
+          duration: Duration(seconds: 4),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  /// Maneja cuando expira el permiso MediaProjection
+  void _handlePermissionExpired() {
+    debugPrint(
+      '⚠️ Permiso de MediaProjection expirado, solicitando de nuevo...',
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'ℹ️ Por seguridad, Android requiere confirmar el permiso para cada captura. Toca el botón de nuevo.',
+          ),
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.blue,
+          action: SnackBarAction(
+            label: 'CAPTURAR',
+            textColor: Colors.white,
+            onPressed: _startScreenCapture,
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Inicia la captura de pantalla con overlay flotante
+  Future<void> _startScreenCapture() async {
+    try {
+      // Verificar y solicitar permisos si es necesario
+      final started = await ScreenCaptureService.captureWithPermissionCheck();
+
+      if (!started && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Se requiere permiso de overlay para capturar la pantalla',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error al iniciar captura: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al iniciar la captura')),
+        );
+      }
+    }
+  }
+
+  /// Toggle del bubble flotante persistente
+  Future<void> _toggleFloatingBubble() async {
+    try {
+      if (_isFloatingBubbleActive) {
+        // Detener el bubble
+        await ScreenCaptureService.stopFloatingBubble();
+        if (mounted) {
+          setState(() {
+            _isFloatingBubbleActive = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Overlay flotante desactivado')),
+          );
+        }
+      } else {
+        // Iniciar el bubble
+        final started = await ScreenCaptureService.startFloatingBubble();
+        if (mounted) {
+          if (started) {
+            setState(() {
+              _isFloatingBubbleActive = true;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  '¡Overlay flotante activo! Tócalo para capturar desde cualquier app',
+                ),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Se requiere permiso de overlay')),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error toggling floating bubble: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al activar overlay flotante')),
+        );
+      }
+    }
   }
 
   /// Abre el cropper en un modal con el archivo [file]. Al confirmar, reemplaza
@@ -227,6 +430,15 @@ class _OCRPageState extends State<OCRPage> {
                 },
               ),
               ListTile(
+                leading: const Icon(Icons.screenshot),
+                title: const Text('Captura de pantalla'),
+                subtitle: const Text('Overlay flotante'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _startScreenCapture();
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.image),
                 title: const Text('Imagen de ejemplo'),
                 onTap: () {
@@ -266,6 +478,17 @@ class _OCRPageState extends State<OCRPage> {
         ),
         backgroundColor: theme.colorScheme.inversePrimary,
         actions: [
+          // Toggle del bubble flotante persistente
+          IconButton(
+            icon: Icon(
+              _isFloatingBubbleActive ? Icons.bubble_chart : Icons.trip_origin,
+            ),
+            tooltip: _isFloatingBubbleActive
+                ? 'Desactivar overlay flotante'
+                : 'Activar overlay flotante',
+            color: _isFloatingBubbleActive ? Colors.green : null,
+            onPressed: _toggleFloatingBubble,
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'Ver historial',

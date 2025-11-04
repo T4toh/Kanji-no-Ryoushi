@@ -99,7 +99,6 @@ class _DictionaryPageState extends State<DictionaryPage> {
         _isDownloading = false;
         _errorMessage = 'Error al inicializar: $e';
       });
-      print('Error inicializando JitendexService: $e');
     }
   }
 
@@ -125,7 +124,6 @@ class _DictionaryPageState extends State<DictionaryPage> {
         _errorMessage = 'Error en la búsqueda: $e';
         _isLoading = false;
       });
-      print('Error en búsqueda: $e');
     }
   }
 

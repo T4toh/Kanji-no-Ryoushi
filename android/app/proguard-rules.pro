@@ -39,3 +39,19 @@
 # Don't warn about Play Core (deferred components - no lo usamos)
 -dontwarn com.google.android.play.core.**
 -keep class com.google.android.play.core.** { *; }
+
+# Keep MediaProjection y clases relacionadas para screen capture
+-keep class android.media.projection.** { *; }
+-keep class android.media.ImageReader { *; }
+-keep class android.hardware.display.VirtualDisplay { *; }
+-keep class android.hardware.display.DisplayManager { *; }
+
+# Keep nuestro servicio de captura de pantalla
+-keep class com.example.kanji_no_ryoushi.ScreenCaptureService { *; }
+-keep class com.example.kanji_no_ryoushi.ScreenCaptureService$** { *; }
+
+# Keep MainActivity con MethodChannel
+-keep class com.example.kanji_no_ryoushi.MainActivity { *; }
+-keepclassmembers class com.example.kanji_no_ryoushi.MainActivity {
+    public *;
+}

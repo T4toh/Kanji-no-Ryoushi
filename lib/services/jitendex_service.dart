@@ -35,19 +35,14 @@ class JitendexService {
     final exists = await databaseExists(path);
 
     if (!exists) {
-      print("Base de datos no encontrada. Intentando descargar...");
-
       // Intentar descargar desde la URL
       try {
         await _downloadDatabase(path, onProgress: onDownloadProgress);
       } catch (e) {
-        print("Error al descargar: $e");
         // Si falla la descarga, intentar copiar desde assets (fallback)
         try {
-          print("Intentando copiar desde assets como fallback...");
           await _copyFromAssets(path);
         } catch (assetError) {
-          print("Error al copiar desde assets: $assetError");
           throw Exception(
             'No se pudo obtener el diccionario. Verifica tu conexión a internet.',
           );
@@ -67,8 +62,6 @@ class JitendexService {
     try {
       // Asegurar que el directorio existe
       await Directory(dirname(path)).create(recursive: true);
-
-      print('Descargando diccionario desde $_databaseUrl');
 
       // Hacer la petición HTTP
       final request = http.Request('GET', Uri.parse(_databaseUrl));
@@ -91,15 +84,12 @@ class JitendexService {
         if (contentLength > 0) {
           final progress = receivedBytes / contentLength;
           onProgress?.call(progress);
-          print('Progreso: ${(progress * 100).toStringAsFixed(1)}%');
         }
       }
 
       // Escribir el archivo
       await File(path).writeAsBytes(bytes, flush: true);
-      print('Diccionario descargado exitosamente: ${bytes.length} bytes');
     } catch (e) {
-      print('Error en _downloadDatabase: $e');
       rethrow;
     }
   }
@@ -120,7 +110,6 @@ class JitendexService {
 
     // Escribir los bytes
     await File(path).writeAsBytes(bytes, flush: true);
-    print('Base de datos copiada desde assets');
   }
 
   /// Verifica si la base de datos está disponible
@@ -178,7 +167,6 @@ class JitendexService {
 
       return grouped.values.toList();
     } catch (e) {
-      print('Error al buscar en el diccionario: $e');
       return [];
     }
   }
@@ -222,7 +210,6 @@ class JitendexService {
     final file = File(path);
     if (await file.exists()) {
       await file.delete();
-      print('Base de datos eliminada');
     }
   }
 
