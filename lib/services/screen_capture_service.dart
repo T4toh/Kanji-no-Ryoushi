@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 
 /// Servicio para capturar áreas de la pantalla usando overlay flotante en Android
@@ -12,6 +11,12 @@ class ScreenCaptureService {
 
   /// Callback que se ejecuta cuando se cancela una captura
   static Function()? onCaptureCancelled;
+
+  /// Callback que se ejecuta cuando se otorga el permiso MediaProjection
+  static Function()? onMediaProjectionGranted;
+
+  /// Callback que se ejecuta cuando expira el permiso MediaProjection
+  static Function()? onPermissionExpired;
 
   /// Inicializa el servicio y configura los callbacks
   static void initialize() {
@@ -32,6 +37,14 @@ class ScreenCaptureService {
         // El bubble flotante quiere iniciar una captura
         await captureWithPermissionCheck();
         break;
+      case 'onMediaProjectionGranted':
+        // Se otorgó el permiso de MediaProjection por primera vez
+        onMediaProjectionGranted?.call();
+        break;
+      case 'onPermissionExpired':
+        // El token de MediaProjection expiró, necesitamos pedir permiso de nuevo
+        onPermissionExpired?.call();
+        break;
     }
   }
 
@@ -41,7 +54,6 @@ class ScreenCaptureService {
       final bool result = await _channel.invokeMethod('checkOverlayPermission');
       return result;
     } catch (e) {
-      print('Error checking overlay permission: $e');
       return false;
     }
   }
@@ -54,7 +66,6 @@ class ScreenCaptureService {
       );
       return result;
     } catch (e) {
-      print('Error requesting overlay permission: $e');
       return false;
     }
   }
@@ -66,14 +77,13 @@ class ScreenCaptureService {
       final bool result = await _channel.invokeMethod('startScreenCapture');
       return result;
     } catch (e) {
-      print('Error starting screen capture: $e');
       return false;
     }
   }
 
   /// Workflow completo: verificar permisos y iniciar captura
   static Future<bool> captureWithPermissionCheck() async {
-    // Verificar si ya tenemos el permiso
+    // Verificar si ya tenemos el permiso de overlay
     bool hasPermission = await checkOverlayPermission();
 
     // Si no lo tenemos, solicitarlo
@@ -86,7 +96,8 @@ class ScreenCaptureService {
       return false;
     }
 
-    // Iniciar captura
+    // SIEMPRE iniciar captura, esto pedirá MediaProjection automáticamente si es necesario
+    // porque las credenciales se invalidan después de cada captura en Android 14+
     return await startScreenCapture();
   }
 
@@ -106,7 +117,6 @@ class ScreenCaptureService {
       final bool result = await _channel.invokeMethod('startFloatingBubble');
       return result;
     } catch (e) {
-      print('Error starting floating bubble: $e');
       return false;
     }
   }
@@ -117,7 +127,6 @@ class ScreenCaptureService {
       final bool result = await _channel.invokeMethod('stopFloatingBubble');
       return result;
     } catch (e) {
-      print('Error stopping floating bubble: $e');
       return false;
     }
   }
@@ -130,7 +139,6 @@ class ScreenCaptureService {
       );
       return result;
     } catch (e) {
-      print('Error checking bubble status: $e');
       return false;
     }
   }

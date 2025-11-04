@@ -7,11 +7,13 @@ Es un **ícono pequeño que flota sobre todas las apps** de tu teléfono, simila
 ## 🎯 Ventajas
 
 ### Antes (sin bubble):
+
 ```
 Estás en un manga → Cambias a Kanji no Ryoushi → Captura de pantalla → Vuelves al manga
 ```
 
 ### Ahora (con bubble):
+
 ```
 Estás en un manga → Tocas el bubble flotante → ¡Captura! → Sigues en el manga
 ```
@@ -39,6 +41,7 @@ Estás en un manga → Tocas el bubble flotante → ¡Captura! → Sigues en el 
 ## 📱 Uso del Bubble
 
 ### Posicionamiento
+
 - **Arrastra** el bubble a cualquier parte de la pantalla
 - Al soltarlo, se **pegará automáticamente** al borde más cercano
 - Permanece **semi-transparente** cuando no lo usas
@@ -58,6 +61,7 @@ Estás en un manga → Tocas el bubble flotante → ¡Captura! → Sigues en el 
 ### ✅ Perfecto Para:
 
 **📖 Leer Manga Digital**
+
 ```
 Lees Shōnen Jump app → Bubble visible a un lado
 Kanji difícil → Tocas bubble → Seleccionas → Traducción
@@ -65,18 +69,21 @@ Vuelves a leer → Bubble sigue ahí
 ```
 
 **🎮 Juegos RPG Japoneses**
+
 ```
 Diálogo importante → Toca bubble → Captura → Entiendes
 Juego pausado solo 3 segundos
 ```
 
 **🌐 Navegación Web**
+
 ```
 Artículo en japonés → Bubble siempre visible
 Palabra desconocida → Toca → Busca en diccionario
 ```
 
 **💬 Mensajería**
+
 ```
 WhatsApp/LINE en japonés → Bubble presente
 Mensaje confuso → Captura → OCR
@@ -87,11 +94,13 @@ Mensaje confuso → Captura → OCR
 ### Activar/Desactivar
 
 **Método 1: Desde la App**
+
 - Tocar el ícono del bubble en el AppBar
 - Verde = Activo
 - Gris = Inactivo
 
 **Método 2: Desde Notificación**
+
 - Mientras esté activo, verás notificación "Captura Rápida Activa"
 - Expandir notificación
 - Tocar "Cerrar"
@@ -99,12 +108,14 @@ Mensaje confuso → Captura → OCR
 ### Permisos Requeridos
 
 El bubble necesita el mismo permiso que el overlay normal:
+
 - **"Mostrar sobre otras apps"** (SYSTEM_ALERT_WINDOW)
 - Se solicita automáticamente al activar
 
 ### Notificación Persistente
 
 Mientras el bubble esté activo:
+
 - ✅ Notificación visible (requerido por Android)
 - ✅ Indica "Captura Rápida Activa"
 - ✅ Botón para cerrar el bubble
@@ -119,31 +130,39 @@ Mientras el bubble esté activo:
 ## 🐛 Troubleshooting
 
 ### El bubble no aparece
+
 **Causa**: Falta permiso  
 **Solución**:
+
 1. Settings → Apps → Kanji no Ryoushi
 2. Permisos especiales → Mostrar sobre otras apps → Activar
 
 ### El bubble desaparece solo
+
 **Causa**: Android mató el servicio por optimización de batería  
 **Solución**:
+
 1. Settings → Apps → Kanji no Ryoushi → Batería
 2. Seleccionar "Sin restricciones"
 
 ### No puedo arrastrar el bubble
+
 **Causa**: Está en modo "solo lectura" por restricción del sistema  
 **Solución**: Reiniciar la app
 
 ### El bubble cubre contenido importante
+
 **Solución**: Arrástralo a otra parte de la pantalla
 
 ### Al tocar el bubble, la captura falla
+
 **Causa**: Falta permiso de MediaProjection  
 **Solución**: La primera vez, aceptar "Grabar pantalla"
 
 ## 🎨 Personalización (Futuro)
 
 Funcionalidades planeadas:
+
 - [ ] Elegir ícono del bubble
 - [ ] Ajustar tamaño del bubble
 - [ ] Ocultar automáticamente después de X segundos
@@ -152,24 +171,26 @@ Funcionalidades planeadas:
 
 ## 📊 Comparación: Bubble vs Captura Normal
 
-| Característica | Bubble Flotante | Captura Normal |
-|----------------|-----------------|----------------|
-| **Velocidad** | ⚡ Instantáneo | 🐌 Cambiar de app |
-| **Fluidez** | ✅ No interrumpe | ❌ Rompe el flujo |
-| **Conveniencia** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
-| **Siempre disponible** | ✅ Sí | ❌ No |
-| **Batería** | ⚠️ Mínima | ✅ Nada |
-| **Espacio en pantalla** | ⚠️ Ocupa espacio | ✅ Limpio |
+| Característica          | Bubble Flotante  | Captura Normal    |
+| ----------------------- | ---------------- | ----------------- |
+| **Velocidad**           | ⚡ Instantáneo   | 🐌 Cambiar de app |
+| **Fluidez**             | ✅ No interrumpe | ❌ Rompe el flujo |
+| **Conveniencia**        | ⭐⭐⭐⭐⭐       | ⭐⭐⭐            |
+| **Siempre disponible**  | ✅ Sí            | ❌ No             |
+| **Batería**             | ⚠️ Mínima        | ✅ Nada           |
+| **Espacio en pantalla** | ⚠️ Ocupa espacio | ✅ Limpio         |
 
 ## 🎯 Recomendación de Uso
 
 **Activa el bubble cuando:**
+
 - Vas a leer manga/novela por tiempo prolongado
 - Estás jugando un JRPG con mucho texto
 - Navegas web en japonés
 - Estudias con material en japonés
 
 **Desactiva el bubble cuando:**
+
 - Ya terminaste de usar apps en japonés
 - Necesitas pantalla completa limpia (videos, fotos)
 - Vas a usar apps que no requieren OCR

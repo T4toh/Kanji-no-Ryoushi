@@ -10,7 +10,11 @@
   - Selección de área interactiva con drag
   - MediaProjection para captura de pantalla
   - Integración automática con OCR
-  - Documentación completa en `docs/SCREEN_CAPTURE.md`
+  - Bubble flotante persistente (chat heads style)
+  - Compatible con Android 14+ (foreground service types)
+  - Recorte preciso con escalado correcto overlay→bitmap
+  - Manejo automático de token MediaProjection expirado
+  - Documentación completa en `README.md`
 
 - **Diccionario**: ✅ Implementado con JitendEx
   - Base de datos local SQLite

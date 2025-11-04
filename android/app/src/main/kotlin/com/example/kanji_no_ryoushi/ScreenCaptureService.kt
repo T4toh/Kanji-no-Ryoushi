@@ -3,6 +3,7 @@ package com.example.kanji_no_ryoushi
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.*
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
@@ -35,6 +36,8 @@ class ScreenCaptureService : Service() {
     private var resultCode: Int = 0
     private var resultData: Intent? = null
     
+    private var isCapturing = false
+    
     companion object {
         const val NOTIFICATION_ID = 1001
         const val CHANNEL_ID = "screen_capture_channel"
@@ -43,6 +46,7 @@ class ScreenCaptureService : Service() {
         const val EXTRA_RESULT_DATA = "result_data"
         
         var captureCallback: ((ByteArray?) -> Unit)? = null
+        var permissionExpiredCallback: (() -> Unit)? = null
     }
     
     override fun onCreate() {
@@ -53,10 +57,28 @@ class ScreenCaptureService : Service() {
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_START_CAPTURE) {
+            // Evitar inicios duplicados
+            if (isCapturing) {
+                android.util.Log.w("ScreenCapture", "Ya hay una captura en curso, ignorando")
+                return START_NOT_STICKY
+            }
+            
+            isCapturing = true
             resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, 0)
             resultData = intent.getParcelableExtra(EXTRA_RESULT_DATA)
             
-            startForeground(NOTIFICATION_ID, createNotification())
+            // Combinar MEDIA_PROJECTION (requerido) y SPECIAL_USE (para evitar restricciones)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    createNotification(),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION or 
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, createNotification())
+            }
+            
             showOverlay()
         }
         
@@ -90,9 +112,14 @@ class ScreenCaptureService : Service() {
     }
     
     private fun showOverlay() {
+        // Primero obtener las métricas reales de la pantalla
+        val metrics = DisplayMetrics()
+        windowManager?.defaultDisplay?.getRealMetrics(metrics)
+        val screenHeight = metrics.heightPixels
+        
         val layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
+            screenHeight, // Usar altura exacta en lugar de MATCH_PARENT
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             } else {
@@ -101,9 +128,13 @@ class ScreenCaptureService : Service() {
             },
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
-        )
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            y = 0
+        }
         
         val container = FrameLayout(this)
         
@@ -150,44 +181,68 @@ class ScreenCaptureService : Service() {
     }
     
     private fun captureScreen() {
-        val metrics = DisplayMetrics()
-        windowManager?.defaultDisplay?.getRealMetrics(metrics)
-        val width = metrics.widthPixels
-        val height = metrics.heightPixels
-        val density = metrics.densityDpi
+        // Primero ocultar el overlay y esperar un momento
+        hideOverlayTemporarily()
         
-        imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
-        
-        val mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, resultData!!)
-        
-        // Registrar callback requerido en Android 14+
-        mediaProjection?.registerCallback(object : MediaProjection.Callback() {
-            override fun onStop() {
-                super.onStop()
-                cleanup()
-            }
-        }, Handler(Looper.getMainLooper()))
-        
-        virtualDisplay = mediaProjection?.createVirtualDisplay(
-            "ScreenCapture",
-            width,
-            height,
-            density,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-            imageReader?.surface,
-            null,
-            null
-        )
-        
-        // Pequeño delay para asegurar que el overlay se oculta antes de capturar
+        // Delay para que el overlay se oculte completamente
         Handler(Looper.getMainLooper()).postDelayed({
-            hideOverlayTemporarily()
+            val metrics = DisplayMetrics()
+            windowManager?.defaultDisplay?.getRealMetrics(metrics)
+            val width = metrics.widthPixels
+            val height = metrics.heightPixels
+            val density = metrics.densityDpi
             
-            Handler(Looper.getMainLooper()).postDelayed({
-                processCapture()
-            }, 100)
-        }, 50)
+            imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
+            
+            val mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            
+            // Crear NUEVO MediaProjection cada vez (Android no permite reusar el mismo)
+            // IMPORTANTE: esto invalida el token anterior
+            mediaProjection?.stop()
+            mediaProjection = null
+            
+            try {
+                mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, resultData!!)
+                
+                // Registrar callback requerido en Android 14+
+                mediaProjection?.registerCallback(object : MediaProjection.Callback() {
+                    override fun onStop() {
+                        super.onStop()
+                    }
+                }, Handler(Looper.getMainLooper()))
+                
+                virtualDisplay = mediaProjection?.createVirtualDisplay(
+                    "ScreenCapture",
+                    width,
+                    height,
+                    density,
+                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                    imageReader?.surface,
+                    null,
+                    null
+                )
+                
+                // Esperar un poco más para que la captura se complete
+                Handler(Looper.getMainLooper()).postDelayed({
+                    processCapture()
+                }, 200)
+            } catch (e: SecurityException) {
+                android.util.Log.e("ScreenCapture", "SecurityException - Token de MediaProjection expirado o inválido", e)
+                
+                // INVALIDAR las credenciales guardadas para forzar nuevo permiso
+                FloatingBubbleService.captureResultCode = 0
+                FloatingBubbleService.captureResultData = null
+                
+                // Notificar que necesitamos pedir permiso de nuevo
+                permissionExpiredCallback?.invoke()
+                captureCallback?.invoke(null)
+                stopOverlay()
+            } catch (e: Exception) {
+                android.util.Log.e("ScreenCapture", "Error creando MediaProjection", e)
+                captureCallback?.invoke(null)
+                stopOverlay()
+            }
+        }, 100)
     }
     
     private fun hideOverlayTemporarily() {
@@ -199,43 +254,85 @@ class ScreenCaptureService : Service() {
             val image = imageReader?.acquireLatestImage()
             if (image != null) {
                 val selectionRect = selectionView?.getSelectionRect()
+                val overlaySize = selectionView?.let { Point(it.width, it.height) }
+                
                 val bitmap = imageToBitmap(image)
                 image.close()
                 
+                // Escalar el rectángulo de selección a las coordenadas del bitmap
+                // El overlay puede tener diferente tamaño que el bitmap (barras de sistema)
                 val croppedBitmap = if (selectionRect != null && 
+                    overlaySize != null &&
                     selectionRect.width() > 0 && 
-                    selectionRect.height() > 0 &&
-                    selectionRect.left >= 0 &&
-                    selectionRect.top >= 0 &&
-                    selectionRect.right <= bitmap.width &&
-                    selectionRect.bottom <= bitmap.height
+                    selectionRect.height() > 0
                 ) {
-                    Bitmap.createBitmap(
-                        bitmap,
-                        selectionRect.left,
-                        selectionRect.top,
-                        selectionRect.width(),
-                        selectionRect.height()
-                    )
+                    // Calcular escala entre el OVERLAY (donde se hizo la selección) y el BITMAP capturado
+                    val scaleX = bitmap.width.toFloat() / overlaySize.x.toFloat()
+                    val scaleY = bitmap.height.toFloat() / overlaySize.y.toFloat()
+                    
+                    // Escalar coordenadas del rectángulo
+                    val scaledLeft = (selectionRect.left * scaleX).toInt()
+                    val scaledTop = (selectionRect.top * scaleY).toInt()
+                    val scaledRight = (selectionRect.right * scaleX).toInt()
+                    val scaledBottom = (selectionRect.bottom * scaleY).toInt()
+                    
+                    val scaledWidth = scaledRight - scaledLeft
+                    val scaledHeight = scaledBottom - scaledTop
+                    
+                    // Validar que las coordenadas escaladas estén dentro del bitmap
+                    if (scaledLeft >= 0 && scaledTop >= 0 && 
+                        scaledRight <= bitmap.width && scaledBottom <= bitmap.height &&
+                        scaledWidth > 0 && scaledHeight > 0
+                    ) {
+                        Bitmap.createBitmap(
+                            bitmap,
+                            scaledLeft,
+                            scaledTop,
+                            scaledWidth,
+                            scaledHeight
+                        )
+                    } else {
+                        bitmap
+                    }
                 } else {
                     bitmap
                 }
                 
                 val byteArray = bitmapToByteArray(croppedBitmap)
+                
+                // Enviar a Flutter
                 captureCallback?.invoke(byteArray)
+                
+                // Pequeño delay para asegurar que el callback se procese
+                Handler(Looper.getMainLooper()).postDelayed({
+                    // Abrir la app automáticamente con la captura
+                    val appIntent = Intent(this, MainActivity::class.java).apply {
+                        action = Intent.ACTION_MAIN
+                        addCategory(Intent.CATEGORY_LAUNCHER)
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
+                                Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                                Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    }
+                    startActivity(appIntent)
+                }, 300)
                 
                 bitmap.recycle()
                 if (croppedBitmap != bitmap) {
                     croppedBitmap.recycle()
                 }
             } else {
+                android.util.Log.e("ScreenCapture", "No se pudo obtener imagen")
                 captureCallback?.invoke(null)
             }
         } catch (e: Exception) {
+            android.util.Log.e("ScreenCapture", "Error procesando captura", e)
             e.printStackTrace()
             captureCallback?.invoke(null)
         } finally {
-            stopOverlay()
+            // Delay antes de cerrar el overlay para permitir que el Intent se procese
+            Handler(Looper.getMainLooper()).postDelayed({
+                stopOverlay()
+            }, 500)
         }
     }
     
@@ -246,18 +343,29 @@ class ScreenCaptureService : Service() {
         val rowStride = planes[0].rowStride
         val rowPadding = rowStride - pixelStride * image.width
         
+        // Crear bitmap con padding extra para acomodar el rowStride
         val bitmap = Bitmap.createBitmap(
             image.width + rowPadding / pixelStride,
             image.height,
             Bitmap.Config.ARGB_8888
         )
+        
+        // Copiar directamente desde el buffer
+        buffer.rewind()
         bitmap.copyPixelsFromBuffer(buffer)
         
-        return if (rowPadding == 0) {
-            bitmap
-        } else {
+        // Si hay padding, recortar al tamaño real
+        val finalBitmap = if (rowPadding != 0) {
             Bitmap.createBitmap(bitmap, 0, 0, image.width, image.height)
+        } else {
+            bitmap
         }
+        
+        if (finalBitmap != bitmap) {
+            bitmap.recycle()
+        }
+        
+        return finalBitmap
     }
     
     private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
@@ -279,6 +387,11 @@ class ScreenCaptureService : Service() {
         selectionView = null
         
         cleanup()
+        
+        // NO invalidar las credenciales - se pueden reutilizar
+        // Solo limpiamos el MediaProjection instance usado
+        
+        isCapturing = false
         stopForeground(true)
         stopSelf()
     }
@@ -291,6 +404,11 @@ class ScreenCaptureService : Service() {
         virtualDisplay = null
         imageReader = null
         mediaProjection = null
+        
+        // INVALIDAR credenciales después de cada captura
+        // Android 14+ solo permite usar el token UNA vez
+        FloatingBubbleService.captureResultCode = 0
+        FloatingBubbleService.captureResultData = null
     }
     
     override fun onDestroy() {

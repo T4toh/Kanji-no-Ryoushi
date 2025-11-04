@@ -3,12 +3,15 @@ package com.example.kanji_no_ryoushi
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.graphics.PixelFormat
+import android.content.pm.ServiceInfo
+import android.graphics.*
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.IBinder
 import android.view.*
 import android.widget.ImageView
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import kotlin.math.abs
 
 /**
@@ -27,6 +30,7 @@ class FloatingBubbleService : Service() {
     
     private var isDragging = false
     private val DRAG_THRESHOLD = 10 // pixels
+    private val BUBBLE_SIZE = 56 // dp - tamaño estándar de FAB en Material Design
     
     companion object {
         const val NOTIFICATION_ID = 1002
@@ -35,6 +39,8 @@ class FloatingBubbleService : Service() {
         const val ACTION_STOP_BUBBLE = "com.example.kanji_no_ryoushi.STOP_BUBBLE"
         
         var isRunning = false
+        var captureResultCode: Int = 0
+        var captureResultData: Intent? = null
     }
     
     override fun onCreate() {
@@ -47,7 +53,16 @@ class FloatingBubbleService : Service() {
         when (intent?.action) {
             ACTION_START_BUBBLE -> {
                 if (!isRunning) {
-                    startForeground(NOTIFICATION_ID, createNotification())
+                    // Usar el tipo correcto de foreground service en Android 14+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        startForeground(
+                            NOTIFICATION_ID,
+                            createNotification(),
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                        )
+                    } else {
+                        startForeground(NOTIFICATION_ID, createNotification())
+                    }
                     showBubble()
                     isRunning = true
                 }
@@ -103,10 +118,12 @@ class FloatingBubbleService : Service() {
     }
     
     private fun showBubble() {
+        val bubbleSize = (BUBBLE_SIZE * resources.displayMetrics.density).toInt()
+        
         // Configurar parámetros del bubble
         val layoutParams = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            bubbleSize,
+            bubbleSize,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             } else {
@@ -118,16 +135,28 @@ class FloatingBubbleService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = 0
-            y = 100
+            x = 20
+            y = 200
         }
         
-        // Crear vista del bubble (ícono circular)
+        // Crear vista del bubble (ícono circular con el logo de la app)
         bubbleView = ImageView(this).apply {
-            setImageResource(android.R.drawable.ic_menu_camera)
-            setBackgroundResource(android.R.drawable.btn_default)
-            setPadding(20, 20, 20, 20)
-            alpha = 0.8f
+            // Usar el ícono de la app
+            setImageDrawable(ContextCompat.getDrawable(context, R.mipmap.ic_launcher))
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            
+            // Fondo circular con sombra
+            val drawable = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.WHITE)
+                setStroke(4, Color.parseColor("#4CAF50")) // Borde verde
+            }
+            background = drawable
+            
+            // Padding para que el ícono no toque los bordes
+            setPadding(8, 8, 8, 8)
+            alpha = 0.9f
+            elevation = 8f
             
             // Configurar listeners para drag y click
             setOnTouchListener(object : View.OnTouchListener {
@@ -166,7 +195,7 @@ class FloatingBubbleService : Service() {
                         }
                         
                         MotionEvent.ACTION_UP -> {
-                            alpha = 0.8f
+                            alpha = 0.9f
                             
                             // Si no fue drag, es un click
                             if (!isDragging) {
@@ -196,24 +225,41 @@ class FloatingBubbleService : Service() {
     private fun snapToEdge(params: WindowManager.LayoutParams) {
         val displayMetrics = resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
+        val bubbleSize = (BUBBLE_SIZE * resources.displayMetrics.density).toInt()
         
         // Mover al borde más cercano (izquierda o derecha)
         params.x = if (params.x < screenWidth / 2) {
             20 // Margen izquierdo
         } else {
-            screenWidth - bubbleView?.width!! - 20 // Margen derecho
+            screenWidth - bubbleSize - 20 // Margen derecho
         }
         
         windowManager?.updateViewLayout(bubbleView, params)
     }
     
     private fun onBubbleClicked() {
-        // Iniciar captura de pantalla
-        val captureIntent = Intent(this, MainActivity::class.java).apply {
-            action = "com.example.kanji_no_ryoushi.TRIGGER_SCREEN_CAPTURE"
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        // Verificar si tenemos los datos de MediaProjection guardados
+        if (captureResultCode != 0 && captureResultData != null) {
+            // Iniciar servicio de captura DIRECTAMENTE con los datos guardados
+            val serviceIntent = Intent(this, ScreenCaptureService::class.java).apply {
+                action = ScreenCaptureService.ACTION_START_CAPTURE
+                putExtra(ScreenCaptureService.EXTRA_RESULT_CODE, captureResultCode)
+                putExtra(ScreenCaptureService.EXTRA_RESULT_DATA, captureResultData)
+            }
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } else {
+            // Primera vez: necesitamos ir a la app para obtener permisos
+            val captureIntent = Intent(this, MainActivity::class.java).apply {
+                action = "com.example.kanji_no_ryoushi.TRIGGER_SCREEN_CAPTURE"
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            startActivity(captureIntent)
         }
-        startActivity(captureIntent)
     }
     
     private fun stopBubble() {

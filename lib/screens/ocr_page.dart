@@ -45,6 +45,9 @@ class _OCRPageState extends State<OCRPage> {
     // Configurar callbacks para captura de pantalla
     ScreenCaptureService.onCaptureComplete = _handleCapturedImage;
     ScreenCaptureService.onCaptureCancelled = _handleCaptureCancelled;
+    ScreenCaptureService.onMediaProjectionGranted =
+        _handleMediaProjectionGranted;
+    ScreenCaptureService.onPermissionExpired = _handlePermissionExpired;
 
     // Verificar si el bubble ya está activo
     _checkBubbleStatus();
@@ -65,11 +68,14 @@ class _OCRPageState extends State<OCRPage> {
     // Limpiar callbacks
     ScreenCaptureService.onCaptureComplete = null;
     ScreenCaptureService.onCaptureCancelled = null;
+    ScreenCaptureService.onMediaProjectionGranted = null;
+    ScreenCaptureService.onPermissionExpired = null;
     super.dispose();
   }
 
   /// Maneja la imagen capturada desde el overlay flotante
   Future<void> _handleCapturedImage(Uint8List imageBytes) async {
+    debugPrint('=== CAPTURA RECIBIDA: ${imageBytes.length} bytes ===');
     try {
       // Guardar bytes en archivo temporal
       final tempDir = await getTemporaryDirectory();
@@ -77,25 +83,45 @@ class _OCRPageState extends State<OCRPage> {
         '${tempDir.path}/screen_capture_${DateTime.now().millisecondsSinceEpoch}.png',
       );
       await tempFile.writeAsBytes(imageBytes);
+      debugPrint('Archivo temporal guardado: ${tempFile.path}');
 
       setState(() {
         _selectedImage = tempFile;
         _isUsingExampleImage = false;
       });
 
+      debugPrint('Iniciando procesamiento OCR...');
       // Procesar la imagen capturada
       await _processSelectedImage();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Captura procesada exitosamente')),
+          SnackBar(
+            content: const Text('✅ Captura procesada exitosamente'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'INFO',
+              textColor: Colors.white,
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'ℹ️ Por seguridad de Android 14+, el permiso de captura se invalida después de cada uso. La próxima captura pedirá permiso de nuevo.',
+                    ),
+                    duration: Duration(seconds: 5),
+                  ),
+                );
+              },
+            ),
+          ),
         );
       }
+      debugPrint('=== CAPTURA COMPLETADA ===');
     } catch (e) {
-      debugPrint('Error al procesar captura: $e');
+      debugPrint('!!! ERROR al procesar captura: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al procesar la captura')),
+          SnackBar(content: Text('Error al procesar la captura: $e')),
         );
       }
     }
@@ -107,6 +133,44 @@ class _OCRPageState extends State<OCRPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Captura cancelada')));
+    }
+  }
+
+  /// Maneja cuando se otorga el permiso MediaProjection por primera vez
+  void _handleMediaProjectionGranted() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '✅ ¡Permiso otorgado! Ahora toca el ícono flotante para capturar desde cualquier app',
+          ),
+          duration: Duration(seconds: 4),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  /// Maneja cuando expira el permiso MediaProjection
+  void _handlePermissionExpired() {
+    debugPrint(
+      '⚠️ Permiso de MediaProjection expirado, solicitando de nuevo...',
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'ℹ️ Por seguridad, Android requiere confirmar el permiso para cada captura. Toca el botón de nuevo.',
+          ),
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.blue,
+          action: SnackBarAction(
+            label: 'CAPTURAR',
+            textColor: Colors.white,
+            onPressed: _startScreenCapture,
+          ),
+        ),
+      );
     }
   }
 
@@ -167,11 +231,7 @@ class _OCRPageState extends State<OCRPage> {
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Se requiere permiso de overlay',
-                ),
-              ),
+              const SnackBar(content: Text('Se requiere permiso de overlay')),
             );
           }
         }

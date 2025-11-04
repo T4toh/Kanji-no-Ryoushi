@@ -98,6 +98,13 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+        
+        // Configurar callback para cuando expira el permiso
+        ScreenCaptureService.permissionExpiredCallback = {
+            activity.runOnUiThread {
+                methodChannel?.invokeMethod("onPermissionExpired", null)
+            }
+        }
     }
     
     private fun requestMediaProjection() {
@@ -114,18 +121,13 @@ class MainActivity : FlutterActivity() {
         when (requestCode) {
             REQUEST_MEDIA_PROJECTION -> {
                 if (resultCode == Activity.RESULT_OK && data != null) {
-                    // Iniciar servicio de captura
-                    val serviceIntent = Intent(this, ScreenCaptureService::class.java).apply {
-                        action = ScreenCaptureService.ACTION_START_CAPTURE
-                        putExtra(ScreenCaptureService.EXTRA_RESULT_CODE, resultCode)
-                        putExtra(ScreenCaptureService.EXTRA_RESULT_DATA, data)
-                    }
+                    // Guardar los datos en el FloatingBubbleService para uso futuro
+                    FloatingBubbleService.captureResultCode = resultCode
+                    FloatingBubbleService.captureResultData = data
                     
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(serviceIntent)
-                    } else {
-                        startService(serviceIntent)
-                    }
+                    // NO iniciar captura inmediatamente en la primera vez
+                    // Solo informar al usuario que ya está listo
+                    methodChannel?.invokeMethod("onMediaProjectionGranted", null)
                     
                     pendingResult?.success(true)
                 } else {
@@ -149,6 +151,7 @@ class MainActivity : FlutterActivity() {
     override fun onDestroy() {
         super.onDestroy()
         ScreenCaptureService.captureCallback = null
+        ScreenCaptureService.permissionExpiredCallback = null
         methodChannel?.setMethodCallHandler(null)
     }
     
