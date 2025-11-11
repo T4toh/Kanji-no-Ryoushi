@@ -9,6 +9,7 @@ import 'package:kanji_no_ryoushi/widgets/character_selector.dart';
 import '../services/ocr_service.dart';
 import '../services/history_service.dart';
 import '../services/screen_capture_service.dart';
+import '../services/image_persistence_service.dart';
 import '../models/ocr_history_entry.dart';
 import 'history_page.dart';
 
@@ -27,9 +28,12 @@ class OCRPageState extends State<OCRPage> with WidgetsBindingObserver {
   final OCRService _ocrService = OCRService();
   final ImagePicker _imagePicker = ImagePicker();
   final HistoryService _historyService = HistoryService();
+  final ImagePersistenceService _persistenceService = ImagePersistenceService();
 
   String _recognizedText = '';
   bool _isProcessing = false;
+  bool _isLoadingInitialImage =
+      true; // Para mostrar indicador al cargar imagen inicial
   File? _selectedImage;
   bool _isUsingExampleImage = true;
   bool _isFloatingBubbleActive = false;
@@ -41,8 +45,8 @@ class OCRPageState extends State<OCRPage> with WidgetsBindingObserver {
     // Registrar observer para detectar cuando la app vuelve al foreground
     WidgetsBinding.instance.addObserver(this);
 
-    // Cargar imagen de ejemplo al inicio
-    _loadExampleImage();
+    // Cargar última imagen procesada (o imagen de ejemplo si es primera vez)
+    _loadLastProcessedImage();
 
     // Verificar si el bubble ya está activo
     _checkBubbleStatus();
@@ -334,6 +338,49 @@ class OCRPageState extends State<OCRPage> with WidgetsBindingObserver {
     }
   }
 
+  /// Carga la última imagen procesada (o imagen de ejemplo si es primera vez)
+  Future<void> _loadLastProcessedImage() async {
+    setState(() {
+      _isProcessing = true;
+      _isLoadingInitialImage = true;
+      _recognizedText = '';
+    });
+
+    try {
+      // Intentar cargar la última imagen guardada
+      final lastImage = await _persistenceService.loadLastImage();
+      final isExampleImage = lastImage['isExampleImage'] as bool;
+      final imageFile = lastImage['imageFile'] as File?;
+      final savedText = lastImage['recognizedText'] as String;
+
+      // Si es imagen de ejemplo o no hay archivo, cargar imagen de ejemplo
+      if (isExampleImage || imageFile == null) {
+        await _loadExampleImage();
+        return;
+      }
+
+      setState(() {
+        _isUsingExampleImage = false;
+        _selectedImage = imageFile;
+        _recognizedText = savedText;
+        _isProcessing = false;
+        _isLoadingInitialImage = false;
+      });
+
+      // Si hay imagen guardada pero no texto, procesarla
+      if (savedText.isEmpty) {
+        await _processSelectedImage();
+      }
+    } catch (e) {
+      debugPrint('Error al cargar última imagen: $e');
+      // Si falla, cargar imagen de ejemplo
+      setState(() {
+        _isLoadingInitialImage = false;
+      });
+      await _loadExampleImage();
+    }
+  }
+
   /// Procesa la imagen seleccionada con OCR
   Future<void> _processSelectedImage() async {
     if (_selectedImage == null) return;
@@ -350,6 +397,13 @@ class OCRPageState extends State<OCRPage> with WidgetsBindingObserver {
         _recognizedText = result.text;
         _isProcessing = false;
       });
+
+      // Guardar en persistencia
+      await _persistenceService.saveLastImage(
+        imageFile: _selectedImage,
+        isExampleImage: false,
+        recognizedText: result.text,
+      );
 
       // Guardar en historial si hay texto reconocido
       if (result.text.isNotEmpty && result.text != 'No se reconoció texto') {
@@ -379,6 +433,7 @@ class OCRPageState extends State<OCRPage> with WidgetsBindingObserver {
   Future<void> _loadExampleImage() async {
     setState(() {
       _isProcessing = true;
+      _isLoadingInitialImage = false;
       _recognizedText = '';
       _selectedImage = null;
       _isUsingExampleImage = true;
@@ -393,6 +448,13 @@ class OCRPageState extends State<OCRPage> with WidgetsBindingObserver {
         _recognizedText = result.text;
         _isProcessing = false;
       });
+
+      // Guardar en persistencia
+      await _persistenceService.saveLastImage(
+        imageFile: null,
+        isExampleImage: true,
+        recognizedText: result.text,
+      );
 
       // Guardar en historial
       if (result.text.isNotEmpty && result.text != 'No se reconoció texto') {
@@ -522,7 +584,49 @@ class OCRPageState extends State<OCRPage> with WidgetsBindingObserver {
             // el título antiguo 'Kanji no Ryoushi' en el árbol de widgets.
             const Offstage(child: Text('Kanji no Ryoushi')),
             // Visualización de la imagen
-            if (_selectedImage == null && !_isUsingExampleImage)
+            if (_isLoadingInitialImage)
+              // Mostrar ícono de la app mientras carga la imagen inicial
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? theme.colorScheme.surfaceContainerHighest
+                      : theme.colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Mostrar el ícono de la app
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/images/icon.jpg',
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Cargando última imagen...',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else if (_selectedImage == null && !_isUsingExampleImage)
               // Estado inicial: sin imagen seleccionada
               Container(
                 height: 200,
